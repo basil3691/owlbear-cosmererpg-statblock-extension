@@ -315,31 +315,40 @@ function ActionCostIcon({ cost }: { cost?: ActionCost }) {
   if (cost === "reaction") {
   return (
     <svg
-      width="20"
+      width="18"
       height="18"
-      viewBox="0 0 20 18"
+      viewBox="0 0 18 18"
       style={{ marginRight: 8, verticalAlign: "middle" }}
       aria-hidden="true"
     >
-      <path
-        d="M15.5 4.5
-           C13.8 2.8, 11.4 2, 9 2
-           C4.8 2, 2 4.9, 2 9
-           C2 13.1, 4.8 16, 9 16
-           H14.5"
+      {/* arrow shaft */}
+      <line
+        x1="14"
+        y1="9"
+        x2="6"
+        y2="9"
+        stroke={color}
+        strokeWidth="2.6"
+        strokeLinecap="round"
+      />
+
+      {/* arrow head */}
+      <polyline
+        points="9,5 5,9 9,13"
         fill="none"
         stroke={color}
-        strokeWidth="2.4"
+        strokeWidth="2.6"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <polyline
-        points="8.5,5.2 4.2,9 8.5,12.8"
+
+      {/* slight hook tail (subtle, not swirly) */}
+      <path
+        d="M14 9 C15.5 9, 16 7.5, 15 6"
         fill="none"
         stroke={color}
-        strokeWidth="2.4"
+        strokeWidth="2.2"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </svg>
   );
