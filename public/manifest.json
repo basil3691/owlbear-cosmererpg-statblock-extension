@@ -1,0 +1,15 @@
+{
+  "name": "Cosmere Stat Blocks",
+  "version": "0.0.1",
+  "manifest_version": 1,
+  "description": "Cosmere RPG Stat Blocks",
+  "author": "Eli",
+  "icon": "/icon.svg",
+  "action": {
+    "title": "Stat Blocks",
+    "icon": "/icon.svg",
+    "popover": "/",
+    "width": 420,
+    "height": 700
+  }
+}
