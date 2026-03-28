@@ -294,12 +294,18 @@ function ActionCostIcon({ cost }: { cost?: ActionCost }) {
 
   if (cost === "free") {
     return (
-      <svg width="18" height="18" viewBox="0 0 18 18" style={{ marginRight: 8, verticalAlign: "middle" }}>
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 18 18"
+        style={{ marginRight: 8, verticalAlign: "middle" }}
+        aria-hidden="true"
+      >
         <polygon
-          points="4,3 14,9 4,15"
+          points="3,2 15,9 3,16"
           fill="none"
           stroke={color}
-          strokeWidth="2"
+          strokeWidth="2.2"
           strokeLinejoin="round"
         />
       </svg>
@@ -307,39 +313,138 @@ function ActionCostIcon({ cost }: { cost?: ActionCost }) {
   }
 
   if (cost === "reaction") {
-    return (
-      <svg width="18" height="18" viewBox="0 0 18 18" style={{ marginRight: 8, verticalAlign: "middle" }}>
-        <path
-          d="M13 5a5 5 0 1 0 1.2 5.8"
-          fill="none"
-          stroke={color}
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-        <polyline
-          points="10,3 14,5 11,8"
-          fill="none"
-          stroke={color}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    );
-  }
+  return (
+    <svg
+      width="20"
+      height="18"
+      viewBox="0 0 20 18"
+      style={{ marginRight: 8, verticalAlign: "middle" }}
+      aria-hidden="true"
+    >
+      <path
+        d="M15.5 4.5
+           C13.8 2.8, 11.4 2, 9 2
+           C4.8 2, 2 4.9, 2 9
+           C2 13.1, 4.8 16, 9 16
+           H14.5"
+        fill="none"
+        stroke={color}
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <polyline
+        points="8.5,5.2 4.2,9 8.5,12.8"
+        fill="none"
+        stroke={color}
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
   const count = cost === 2 ? 2 : cost === 3 ? 3 : 1;
 
   return (
-    <svg width={10 + count * 8} height="18" viewBox={`0 0 ${10 + count * 8} 18`} style={{ marginRight: 8, verticalAlign: "middle" }}>
+    <svg
+      width={count * 13}
+      height="18"
+      viewBox={`0 0 ${count * 13} 18`}
+      style={{ marginRight: 8, verticalAlign: "middle" }}
+      aria-hidden="true"
+    >
       {Array.from({ length: count }).map((_, i) => (
         <polygon
           key={i}
-          points={`${2 + i * 8},3 ${8 + i * 8},9 ${2 + i * 8},15`}
+          points={`${1 + i * 13},2 ${13 + i * 13},9 ${1 + i * 13},16`}
           fill={color}
         />
       ))}
     </svg>
+  );
+}
+
+function OpportunityIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 100 100"
+      style={{ verticalAlign: "middle", margin: "0 2px" }}
+      aria-hidden="true"
+    >
+      <circle
+        cx="50"
+        cy="50"
+        r="34"
+        fill="none"
+        stroke="#1f5fbf"
+        strokeWidth="8"
+      />
+      <path
+        d="M50 12 L56 28 L44 28 Z
+           M88 50 L72 56 L72 44 Z
+           M50 88 L44 72 L56 72 Z
+           M12 50 L28 44 L28 56 Z"
+        fill="#1f5fbf"
+      />
+      <path
+        d="M50 26
+           C58 34, 66 42, 74 50
+           C66 58, 58 66, 50 74
+           C42 66, 34 58, 26 50
+           C34 42, 42 34, 50 26 Z"
+        fill="white"
+        stroke="#1f5fbf"
+        strokeWidth="6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ComplicationIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 100 100"
+      style={{ verticalAlign: "middle", margin: "0 2px" }}
+      aria-hidden="true"
+    >
+      <g fill="#b71c1c">
+        <polygon points="50,6 59,28 41,28" />
+        <polygon points="76,16 71,35 57,25" />
+        <polygon points="94,40 74,45 78,29" />
+        <polygon points="88,68 69,60 83,50" />
+        <polygon points="50,94 41,72 59,72" />
+        <polygon points="24,84 29,65 43,75" />
+        <polygon points="6,60 26,55 22,71" />
+        <polygon points="12,32 31,40 17,50" />
+      </g>
+      <circle cx="50" cy="50" r="20" fill="white" />
+    </svg>
+  );
+}
+
+function InlineRulesText({ text }: { text: string }) {
+  const parts = text.split(
+    /(\[free\]|\[action\]|\[reaction\]|\[opportunity\]|\[complication\])/g
+  );
+
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part === "[free]") return <ActionCostIcon key={i} cost="free" />;
+        if (part === "[action]") return <ActionCostIcon key={i} cost={1} />;
+        if (part === "[reaction]") return <ActionCostIcon key={i} cost="reaction" />;
+        if (part === "[opportunity]") return <OpportunityIcon key={i} />;
+        if (part === "[complication]") return <ComplicationIcon key={i} />;
+        return <span key={i}>{part}</span>;
+      })}
+    </>
   );
 }
 
@@ -820,10 +925,10 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
             <SectionSummary title="FEATURES" />
 
             {(adversary.features ?? []).map((feature, i) => (
-              <p key={`f-${i}`} style={{ margin: "4px 0" }}>
-                <strong>{feature.name}.</strong> {feature.text}
-              </p>
-            ))}
+  <p key={`f-${i}`} style={{ margin: "4px 0" }}>
+    <strong>{feature.name}.</strong> <InlineRulesText text={feature.text} />
+  </p>
+))}
           </details>
         </>
       )}
@@ -858,9 +963,13 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
     !action.reach &&
     !action.range &&
     !action.graze &&
-    !action.hit &&
-    action.text}
-  {action.notes && action.notes !== action.text && <> {action.notes}</>}
+    !action.hit && <InlineRulesText text={action.text} />}
+  {action.notes && action.notes !== action.text && (
+    <>
+      {" "}
+      <InlineRulesText text={action.notes} />
+    </>
+  )}
 </p>
               </div>
             ))}
