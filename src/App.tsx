@@ -3,6 +3,7 @@ import OBR from "@owlbear-rodeo/sdk";
 
 const METADATA_KEY = "com.eli.statblocks/adversary";
 const LIBRARY_STORAGE_KEY = "eli-statblocks-library";
+const LIBRARY_BACKUP_KEY = "eli-statblocks-library-backup";
 
 type ActionCost = "free" | "reaction" | 1 | 2 | 3;
 type ActiveTab = "preview" | "builder" | "json" | "library";
@@ -963,9 +964,19 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!libraryLoaded) return;
-    localStorage.setItem(LIBRARY_STORAGE_KEY, JSON.stringify(library));
-  }, [library, libraryLoaded]);
+  if (!libraryLoaded) return;
+
+  const payload = JSON.stringify(library);
+  localStorage.setItem(LIBRARY_STORAGE_KEY, payload);
+
+  const backup = {
+    savedAt: new Date().toISOString(),
+    count: library.length,
+    library,
+  };
+
+  localStorage.setItem(LIBRARY_BACKUP_KEY, JSON.stringify(backup));
+}, [library, libraryLoaded]);
 
   useEffect(() => {
     OBR.onReady(async () => {
@@ -1109,6 +1120,35 @@ export default function App() {
     const first = name.trim()?.[0]?.toUpperCase();
     return first && /[A-Z]/.test(first) ? first : "#";
   }
+
+  function restoreLibraryBackup() {
+  try {
+    const raw = localStorage.getItem(LIBRARY_BACKUP_KEY);
+    if (!raw) {
+      setStatusMessage("No backup found.");
+      return;
+    }
+
+    const parsed = JSON.parse(raw) as {
+      savedAt?: string;
+      count?: number;
+      library?: LibraryEntry[];
+    };
+
+    if (!Array.isArray(parsed.library)) {
+      setStatusMessage("Backup is invalid.");
+      return;
+    }
+
+    setLibrary(parsed.library);
+    setStatusMessage(
+      `Backup restored${parsed.savedAt ? ` from ${new Date(parsed.savedAt).toLocaleString()}` : ""}.`
+    );
+  } catch (error) {
+    console.error(error);
+    setStatusMessage("Could not restore backup.");
+  }
+}
 
   async function attachAdversaryData(parsed: Adversary) {
     if (selection.length === 0) return;
@@ -1654,7 +1694,7 @@ export default function App() {
         </div>
       )}
     </div>
-
+      <MenuAction onClick={restoreLibraryBackup}>Restore Backup</MenuAction>
     <MenuAction onClick={exportLibrary}>Export Library</MenuAction>
   </>
 )}
