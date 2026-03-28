@@ -1738,7 +1738,7 @@ export default function App() {
         `}
       </style>
 
-      <h2 style={{ marginTop: 0, color: "#1f3b67" }}>Cosmere Stat poo Blocks</h2>
+      <h2 style={{ marginTop: 0, color: "#1f3b67" }}>Cosmere Stat Blocks</h2>
 
       {statusMessage && (
         <div
