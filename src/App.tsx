@@ -1473,6 +1473,32 @@ export default function App() {
     setOpenMenu(null);
   }
 
+  function exportLibraryBackup() {
+  const backup = {
+    savedAt: new Date().toISOString(),
+    count: library.length,
+    library,
+  };
+
+  const dataStr = JSON.stringify(backup, null, 2);
+  const blob = new Blob([dataStr], { type: "application/json" });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+
+  const stamp = new Date()
+    .toISOString()
+    .replace(/[:.]/g, "-");
+
+  a.download = `statblock-library-backup-${stamp}.json`;
+  a.click();
+
+  URL.revokeObjectURL(url);
+  setStatusMessage("Backup downloaded.");
+  setOpenMenu(null);
+}
+
   function runLibraryImport(parsed: any) {
   try {
     let entries: LibraryEntry[] = [];
@@ -1695,6 +1721,7 @@ export default function App() {
       )}
     </div>
       <MenuAction onClick={restoreLibraryBackup}>Restore Backup</MenuAction>
+      <MenuAction onClick={exportLibraryBackup}>Export Backup</MenuAction>
     <MenuAction onClick={exportLibrary}>Export Library</MenuAction>
   </>
 )}
