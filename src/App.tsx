@@ -1593,32 +1593,61 @@ export default function App() {
     }));
   }
 
-  function updateAction(index: number, field: "name" | "text" | "cost", value: string) {
-    setSelectedLibraryId(null);
-    setBuilderAdversary((prev) => {
-      const actions = [...(prev.actions ?? [])];
-      const current = actions[index] ?? { name: "", text: "", cost: 1 as ActionCost };
+  function updateAction(
+  index: number,
+  field:
+    | "name"
+    | "text"
+    | "cost"
+    | "attackBonus"
+    | "reach"
+    | "range"
+    | "graze"
+    | "hit"
+    | "notes",
+  value: string
+) {
+  setSelectedLibraryId(null);
+  setBuilderAdversary((prev) => {
+    const actions = [...(prev.actions ?? [])];
+    const current = actions[index] ?? {
+      name: "",
+      text: "",
+      cost: 1 as ActionCost,
+      attackBonus: "",
+      reach: "",
+      range: "",
+      graze: "",
+      hit: "",
+      notes: "",
+    };
 
-      let parsedCost: ActionCost | undefined = current.cost;
-      if (field === "cost") {
-        if (value === "free" || value === "reaction") parsedCost = value;
-        else if (value === "1" || value === "2" || value === "3") {
-          parsedCost = Number(value) as 1 | 2 | 3;
-        } else {
-          parsedCost = undefined;
-        }
+    let parsedCost: ActionCost | undefined = current.cost;
+    if (field === "cost") {
+      if (value === "free" || value === "reaction") parsedCost = value;
+      else if (value === "1" || value === "2" || value === "3") {
+        parsedCost = Number(value) as 1 | 2 | 3;
+      } else {
+        parsedCost = undefined;
       }
+    }
 
-      actions[index] = {
-        ...current,
-        ...(field === "name" ? { name: value } : {}),
-        ...(field === "text" ? { text: value } : {}),
-        ...(field === "cost" ? { cost: parsedCost } : {}),
-      };
+    actions[index] = {
+      ...current,
+      ...(field === "name" ? { name: value } : {}),
+      ...(field === "text" ? { text: value } : {}),
+      ...(field === "cost" ? { cost: parsedCost } : {}),
+      ...(field === "attackBonus" ? { attackBonus: value } : {}),
+      ...(field === "reach" ? { reach: value } : {}),
+      ...(field === "range" ? { range: value } : {}),
+      ...(field === "graze" ? { graze: value } : {}),
+      ...(field === "hit" ? { hit: value } : {}),
+      ...(field === "notes" ? { notes: value } : {}),
+    };
 
-      return { ...prev, actions };
-    });
-  }
+    return { ...prev, actions };
+  });
+}
 
   function addAction() {
     setSelectedLibraryId(null);
@@ -2664,61 +2693,124 @@ export default function App() {
           </details>
 
           <details open>
-            <SectionSummary title="ACTIONS" />
-            <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
-              {(builderAdversary.actions ?? []).map((action, index) => (
-                <div
-                  key={index}
-                  style={{
-                    border: "1px solid #c69a3a",
-                    borderRadius: 6,
-                    padding: 8,
-                    background: "#fff",
-                  }}
-                >
-                  <div style={{ marginBottom: 6 }}>
-                    <BuilderTextInput
-                      value={action.name}
-                      placeholder="Action name"
-                      onChange={(value) => updateAction(index, "name", value)}
-                    />
-                  </div>
+  <SectionSummary title="ACTIONS" />
+  <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
+    {(builderAdversary.actions ?? []).map((action, index) => (
+      <div
+        key={index}
+        style={{
+          border: "1px solid #c69a3a",
+          borderRadius: 6,
+          padding: 8,
+          background: "#fff",
+        }}
+      >
+        <div style={{ marginBottom: 6 }}>
+          <BuilderTextInput
+            value={action.name ?? ""}
+            placeholder="Action name"
+            onChange={(value) => updateAction(index, "name", value)}
+          />
+        </div>
 
-                  <div style={{ marginBottom: 6 }}>
-                    <label style={{ display: "block", marginBottom: 4 }}>Action Cost</label>
-                    <select
-                      value={String(action.cost ?? 1)}
-                      onChange={(e) => updateAction(index, "cost", e.target.value)}
-                      style={{
-                        padding: "6px 8px",
-                        border: "1px solid #c69a3a",
-                        borderRadius: 4,
-                        fontSize: 14,
-                      }}
-                    >
-                      <option value="free">Free</option>
-                      <option value="reaction">Reaction</option>
-                      <option value="1">1 Action</option>
-                      <option value="2">2 Actions</option>
-                      <option value="3">3 Actions</option>
-                    </select>
-                  </div>
+        <div style={{ marginBottom: 6 }}>
+          <label style={{ display: "block", marginBottom: 4 }}>Action Cost</label>
+          <select
+            value={
+              action.cost === "free"
+                ? "free"
+                : action.cost === "reaction"
+                ? "reaction"
+                : String(action.cost ?? 1)
+            }
+            onChange={(e) => updateAction(index, "cost", e.target.value)}
+            style={{
+              padding: "6px 8px",
+              border: "1px solid #c69a3a",
+              borderRadius: 4,
+              fontSize: 14,
+            }}
+          >
+            <option value="free">Free</option>
+            <option value="reaction">Reaction</option>
+            <option value="1">1 Action</option>
+            <option value="2">2 Actions</option>
+            <option value="3">3 Actions</option>
+          </select>
+        </div>
 
-                  <BuilderTextArea
-                    value={action.text}
-                    placeholder="Action text"
-                    onChange={(value) => updateAction(index, "text", value)}
-                    rows={4}
-                  />
+        <div style={{ marginBottom: 6 }}>
+          <BuilderTextInput
+            value={action.attackBonus ?? ""}
+            placeholder="Attack bonus (example: +10*)"
+            onChange={(value) => updateAction(index, "attackBonus", value)}
+          />
+        </div>
 
-                  <button type="button" onClick={() => removeAction(index)} style={{ marginTop: 8 }}>
-                    Remove Action
-                  </button>
-                </div>
-              ))}
-              <button type="button" onClick={addAction}>Add Action</button>
-            </div>
-          </details>
+        <div style={{ marginBottom: 6 }}>
+          <BuilderTextInput
+            value={action.reach ?? ""}
+            placeholder="Reach (example: 5 ft.)"
+            onChange={(value) => updateAction(index, "reach", value)}
+          />
+        </div>
+
+        <div style={{ marginBottom: 6 }}>
+          <BuilderTextInput
+            value={action.range ?? ""}
+            placeholder="Range (example: 150/600 ft.)"
+            onChange={(value) => updateAction(index, "range", value)}
+          />
+        </div>
+
+        <div style={{ marginBottom: 6 }}>
+          <BuilderTextArea
+            value={action.graze ?? ""}
+            placeholder="Graze text"
+            onChange={(value) => updateAction(index, "graze", value)}
+            rows={2}
+          />
+        </div>
+
+        <div style={{ marginBottom: 6 }}>
+          <BuilderTextArea
+            value={action.hit ?? ""}
+            placeholder="Hit text"
+            onChange={(value) => updateAction(index, "hit", value)}
+            rows={3}
+          />
+        </div>
+
+        <div style={{ marginBottom: 6 }}>
+          <BuilderTextArea
+            value={action.notes ?? ""}
+            placeholder="Notes"
+            onChange={(value) => updateAction(index, "notes", value)}
+            rows={3}
+          />
+        </div>
+
+        <div style={{ marginBottom: 6 }}>
+          <BuilderTextArea
+            value={action.text ?? ""}
+            placeholder="Main action text"
+            onChange={(value) => updateAction(index, "text", value)}
+            rows={4}
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => removeAction(index)}
+          style={{ marginTop: 8 }}
+        >
+          Remove Action
+        </button>
+      </div>
+    ))}
+    <button type="button" onClick={addAction}>Add Action</button>
+  </div>
+</details>
 
           <details open>
             <SectionSummary title="TACTICS" />
