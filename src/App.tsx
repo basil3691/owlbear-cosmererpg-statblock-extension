@@ -289,8 +289,20 @@ function exportJsonFile(adversary: Adversary) {
   URL.revokeObjectURL(url);
 }
 
-function ActionCostIcon({ cost }: { cost?: ActionCost }) {
+function ActionCostIcon({
+  cost,
+  inline = false,
+}: {
+  cost?: ActionCost;
+  inline?: boolean;
+}) {
   const color = "#1f3b67";
+  const marginRight = inline ? 0 : 8;
+  const commonStyle = {
+    marginRight,
+    verticalAlign: "middle" as const,
+    display: "inline-block",
+  };
 
   if (cost === "free") {
     return (
@@ -298,7 +310,7 @@ function ActionCostIcon({ cost }: { cost?: ActionCost }) {
         width="18"
         height="18"
         viewBox="0 0 18 18"
-        style={{ marginRight: 8, verticalAlign: "middle" }}
+        style={commonStyle}
         aria-hidden="true"
       >
         <polygon
@@ -313,64 +325,64 @@ function ActionCostIcon({ cost }: { cost?: ActionCost }) {
   }
 
   if (cost === "reaction") {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 18 18"
-      style={{ marginRight: 8, verticalAlign: "middle" }}
-      aria-hidden="true"
-    >
-      {/* arrow shaft */}
-      <line
-        x1="14"
-        y1="9"
-        x2="6"
-        y2="9"
-        stroke={color}
-        strokeWidth="2.6"
-        strokeLinecap="round"
-      />
-
-      {/* arrow head */}
-      <polyline
-        points="9,5 5,9 9,13"
-        fill="none"
-        stroke={color}
-        strokeWidth="2.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-
-      {/* slight hook tail (subtle, not swirly) */}
-      <path
-        d="M14 9 C15.5 9, 16 7.5, 15 6"
-        fill="none"
-        stroke={color}
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
+    return (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 18 18"
+        style={commonStyle}
+        aria-hidden="true"
+      >
+        <line
+          x1="14"
+          y1="9"
+          x2="6"
+          y2="9"
+          stroke={color}
+          strokeWidth="2.6"
+          strokeLinecap="round"
+        />
+        <polyline
+          points="9,5 5,9 9,13"
+          fill="none"
+          stroke={color}
+          strokeWidth="2.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M14 9 C15.4 9, 15.9 7.6, 15 6.2"
+          fill="none"
+          stroke={color}
+          strokeWidth="2.2"
+          strokeLinecap="round"
+        />
+      </svg>
+    );
+  }
 
   const count = cost === 2 ? 2 : cost === 3 ? 3 : 1;
+  const step = 11;
+  const width = 14 + (count - 1) * step;
 
   return (
     <svg
-      width={count * 13}
+      width={width}
       height="18"
-      viewBox={`0 0 ${count * 13} 18`}
-      style={{ marginRight: 8, verticalAlign: "middle" }}
+      viewBox={`0 0 ${width} 18`}
+      style={commonStyle}
       aria-hidden="true"
     >
-      {Array.from({ length: count }).map((_, i) => (
-        <polygon
-          key={i}
-          points={`${1 + i * 13},2 ${13 + i * 13},9 ${1 + i * 13},16`}
-          fill={color}
-        />
-      ))}
+      {Array.from({ length: count }).map((_, i) => {
+        const offset = i * step;
+        return (
+          <polygon
+            key={i}
+            points={`${1 + offset},2 ${13 + offset},9 ${1 + offset},16`}
+            fill={color}
+          />
+        );
+      })}
     </svg>
   );
 }
@@ -439,20 +451,51 @@ function ComplicationIcon() {
 }
 
 function InlineRulesText({ text }: { text: string }) {
-  const parts = text.split(
-    /(\[free\]|\[action\]|\[reaction\]|\[opportunity\]|\[complication\])/g
-  );
+  const lines = text.split("\n");
+
+  function renderInline(line: string, lineIndex: number) {
+    const tokenParts = line.split(
+      /(\[free\]|\[action\]|\[double\]|\[triple\]|\[double action\]|\[triple action\]|\[reaction\]|\[opportunity\]|\[complication\])/g
+    );
+
+    return tokenParts.map((part, tokenIndex) => {
+      const key = `${lineIndex}-${tokenIndex}`;
+
+      if (part === "[free]") return <ActionCostIcon key={key} cost="free" inline />;
+      if (part === "[action]") return <ActionCostIcon key={key} cost={1} inline />;
+      if (part === "[double]" || part === "[double action]") {
+        return <ActionCostIcon key={key} cost={2} inline />;
+      }
+      if (part === "[triple]" || part === "[triple action]") {
+        return <ActionCostIcon key={key} cost={3} inline />;
+      }
+      if (part === "[reaction]") {
+        return <ActionCostIcon key={key} cost="reaction" inline />;
+      }
+      if (part === "[opportunity]") return <OpportunityIcon key={key} />;
+      if (part === "[complication]") return <ComplicationIcon key={key} />;
+
+      const boldParts = part.split(/(\*\*.*?\*\*)/g);
+
+      return boldParts.map((chunk, boldIndex) => {
+        const boldKey = `${key}-${boldIndex}`;
+
+        if (chunk.startsWith("**") && chunk.endsWith("**") && chunk.length >= 4) {
+          return <strong key={boldKey}>{chunk.slice(2, -2)}</strong>;
+        }
+
+        return <span key={boldKey}>{chunk}</span>;
+      });
+    });
+  }
 
   return (
     <>
-      {parts.map((part, i) => {
-        if (part === "[free]") return <ActionCostIcon key={i} cost="free" />;
-        if (part === "[action]") return <ActionCostIcon key={i} cost={1} />;
-        if (part === "[reaction]") return <ActionCostIcon key={i} cost="reaction" />;
-        if (part === "[opportunity]") return <OpportunityIcon key={i} />;
-        if (part === "[complication]") return <ComplicationIcon key={i} />;
-        return <span key={i}>{part}</span>;
-      })}
+      {lines.map((line, i) => (
+        <div key={i} style={{ marginTop: i === 0 ? 0 : 6 }}>
+          {renderInline(line, i)}
+        </div>
+      ))}
     </>
   );
 }
