@@ -80,6 +80,7 @@ type ParsedAction = {
   attackBonus?: string;
   range?: string;
   reach?: string;
+  target?: string;
   graze?: string;
   hit?: string;
   notes?: string;
@@ -113,6 +114,10 @@ function parseActionText(raw: string): ParsedAction {
   const attackBonus = rest.match(/Attack\s*\+(\d+)/i)?.[1];
   const range = rest.match(/range\s+([0-9/]+\s*ft\.?|[0-9/]+)/i)?.[1];
   const reach = rest.match(/reach\s+([0-9]+\s*ft\.?|[0-9]+)/i)?.[1];
+  const targetMatch = rest.match(
+  /(?:reach\s+[0-9]+\s*ft\.?|range\s+[0-9/]+\s*ft\.?)(?:,\s*)([^.]+?target[s]?)/i
+);
+const target = targetMatch?.[1]?.trim();
 
   const grazeMatch = rest.match(/Graze:\s*([^.;]+)/i);
   const hitMatch = rest.match(/Hit:\s*([^.;]+)/i);
@@ -130,6 +135,7 @@ function parseActionText(raw: string): ParsedAction {
     attackBonus: attackBonus ? `+${attackBonus}` : undefined,
     range,
     reach,
+    target,
     graze: grazeMatch ? grazeMatch[1].trim() : undefined,
     hit: hitMatch ? hitMatch[1].trim() : undefined,
     notes:
@@ -180,6 +186,7 @@ function normalizeActions(actions: unknown): ParsedAction[] {
             typeof a.attackBonus === "string" ? a.attackBonus : parsed.attackBonus,
           range: typeof a.range === "string" ? a.range : parsed.range,
           reach: typeof a.reach === "string" ? a.reach : parsed.reach,
+          target: typeof a.target === "string" ? a.target : parsed.target,
           graze: typeof a.graze === "string" ? a.graze : parsed.graze,
           hit: typeof a.hit === "string" ? a.hit : parsed.hit,
           notes: typeof a.notes === "string" ? a.notes : parsed.notes,
@@ -1013,26 +1020,41 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
 
                 <p style={{ margin: 0 }}>
   <strong>{action.name}.</strong>{" "}
-  {action.attackBonus && <>Attack {action.attackBonus}. </>}
-{action.reach && <>Reach {action.reach}. </>}
-{action.range && <>Range {action.range}. </>}
-{action.graze && (
-  <>
-    <em>Graze:</em>{" "}
-    <InlineRulesText text={action.graze} />.{" "}
-  </>
-)}
-{action.hit && (
-  <>
-    <em>Hit:</em>{" "}
-    <InlineRulesText text={action.hit} />.{" "}
-  </>
-)}
+
+  {(() => {
+    const headerParts = [
+      action.attackBonus ? `Attack ${action.attackBonus}` : null,
+      action.reach ? `reach ${action.reach}` : null,
+      action.range ? `range ${action.range}` : null,
+      action.target ? action.target : null,
+    ].filter(Boolean);
+
+    return headerParts.length > 0
+      ? `${headerParts.join(", ")}. `
+      : null;
+  })()}
+
+  {action.graze && (
+    <>
+      <em>Graze:</em>{" "}
+      <InlineRulesText text={action.graze} />.{" "}
+    </>
+  )}
+
+  {action.hit && (
+    <>
+      <em>Hit:</em>{" "}
+      <InlineRulesText text={action.hit} />.{" "}
+    </>
+  )}
+
   {!action.attackBonus &&
     !action.reach &&
     !action.range &&
+    !action.target &&
     !action.graze &&
     !action.hit && <InlineRulesText text={action.text} />}
+
   {action.notes && action.notes !== action.text && (
     <>
       {" "}
@@ -1602,6 +1624,7 @@ export default function App() {
     | "attackBonus"
     | "reach"
     | "range"
+    | "target"
     | "graze"
     | "hit"
     | "notes",
@@ -1617,6 +1640,7 @@ export default function App() {
       attackBonus: "",
       reach: "",
       range: "",
+      target: "",
       graze: "",
       hit: "",
       notes: "",
@@ -1640,6 +1664,7 @@ export default function App() {
       ...(field === "attackBonus" ? { attackBonus: value } : {}),
       ...(field === "reach" ? { reach: value } : {}),
       ...(field === "range" ? { range: value } : {}),
+      ...(field === "target" ? { target: value } : {}),
       ...(field === "graze" ? { graze: value } : {}),
       ...(field === "hit" ? { hit: value } : {}),
       ...(field === "notes" ? { notes: value } : {}),
@@ -1653,7 +1678,21 @@ export default function App() {
     setSelectedLibraryId(null);
     setBuilderAdversary((prev) => ({
       ...prev,
-      actions: [...(prev.actions ?? []), { name: "", text: "", cost: 1 }],
+      actions: [
+  ...(prev.actions ?? []),
+  {
+    name: "",
+    text: "",
+    cost: 1,
+    attackBonus: "",
+    reach: "",
+    range: "",
+    target: "",
+    graze: "",
+    hit: "",
+    notes: "",
+  },
+],
     }));
   }
 
@@ -2742,7 +2781,7 @@ export default function App() {
         <div style={{ marginBottom: 6 }}>
           <BuilderTextInput
             value={action.attackBonus ?? ""}
-            placeholder="Attack bonus (example: +10*)"
+            placeholder="Attack bonus (example: +6)"
             onChange={(value) => updateAction(index, "attackBonus", value)}
           />
         </div>
@@ -2760,6 +2799,14 @@ export default function App() {
             value={action.range ?? ""}
             placeholder="Range (example: 150/600 ft.)"
             onChange={(value) => updateAction(index, "range", value)}
+          />
+        </div>
+
+        <div style={{ marginBottom: 6 }}>
+          <BuilderTextInput
+            value={action.target ?? ""}
+            placeholder="Target (example: one target)"
+            onChange={(value) => updateAction(index, "target", value)}
           />
         </div>
 
