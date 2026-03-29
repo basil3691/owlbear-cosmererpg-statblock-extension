@@ -1013,10 +1013,20 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
                 <p style={{ margin: 0 }}>
   <strong>{action.name}.</strong>{" "}
   {action.attackBonus && <>Attack {action.attackBonus}. </>}
-  {action.reach && <>Reach {action.reach}. </>}
-  {action.range && <>Range {action.range}. </>}
-  {action.graze && <>Graze: {action.graze}. </>}
-  {action.hit && <>Hit: {action.hit}. </>}
+{action.reach && <>Reach {action.reach}. </>}
+{action.range && <>Range {action.range}. </>}
+{action.graze && (
+  <>
+    <em>Graze:</em>{" "}
+    <InlineRulesText text={action.graze} />.{" "}
+  </>
+)}
+{action.hit && (
+  <>
+    <em>Hit:</em>{" "}
+    <InlineRulesText text={action.hit} />.{" "}
+  </>
+)}
   {!action.attackBonus &&
     !action.reach &&
     !action.range &&
