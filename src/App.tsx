@@ -76,6 +76,8 @@ type ParsedAction = {
   name: string;
   text: string;
   cost?: ActionCost;
+  focusCost?: string;
+  investitureCost?: string;
   actionType?: "attack" | "ability" | "reaction" | "free" | "other";
   attackBonus?: string;
   range?: string;
@@ -174,6 +176,8 @@ function normalizeActions(actions: unknown): ParsedAction[] {
             a.cost === 3
               ? (a.cost as ActionCost)
               : undefined,
+          focusCost: typeof a.focusCost === "string" ? a.focusCost : parsed.focusCost,
+          investitureCost: typeof a.investitureCost === "string" ? a.investitureCost : parsed.investitureCost,
           actionType:
             a.actionType === "attack" ||
             a.actionType === "ability" ||
@@ -1019,7 +1023,17 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
                 </div>
 
                 <p style={{ margin: 0 }}>
-  <strong>{action.name}.</strong>{" "}
+  <strong>
+  {action.name}
+  {(action.focusCost || action.investitureCost) &&
+    ` (Costs ${[
+      action.focusCost ? `${action.focusCost} Focus` : null,
+      action.investitureCost ? `${action.investitureCost} Investiture` : null,
+    ]
+      .filter(Boolean)
+      .join(", ")})`}
+  .
+</strong>{" "}
 
   {(() => {
     const headerParts = [
@@ -1621,6 +1635,8 @@ export default function App() {
     | "name"
     | "text"
     | "cost"
+    | "focusCost"
+    | "investitureCost"
     | "attackBonus"
     | "reach"
     | "range"
@@ -1637,6 +1653,8 @@ export default function App() {
       name: "",
       text: "",
       cost: 1 as ActionCost,
+      focusCost: "",
+      investitureCost: "",
       attackBonus: "",
       reach: "",
       range: "",
@@ -1661,6 +1679,8 @@ export default function App() {
       ...(field === "name" ? { name: value } : {}),
       ...(field === "text" ? { text: value } : {}),
       ...(field === "cost" ? { cost: parsedCost } : {}),
+      ...(field === "focusCost" ? { focusCost: value } : {}),
+      ...(field === "investitureCost" ? { investitureCost: value } : {}),
       ...(field === "attackBonus" ? { attackBonus: value } : {}),
       ...(field === "reach" ? { reach: value } : {}),
       ...(field === "range" ? { range: value } : {}),
@@ -1684,6 +1704,8 @@ export default function App() {
     name: "",
     text: "",
     cost: 1,
+    focusCost: "",
+    investitureCost: "",
     attackBonus: "",
     reach: "",
     range: "",
@@ -2777,6 +2799,22 @@ export default function App() {
             <option value="3">3 Actions</option>
           </select>
         </div>
+
+        <div style={{ marginBottom: 6 }}>
+  <BuilderTextInput
+    value={action.focusCost ?? ""}
+    placeholder="Focus cost (example: 1)"
+    onChange={(value) => updateAction(index, "focusCost", value)}
+  />
+</div>
+
+<div style={{ marginBottom: 6 }}>
+  <BuilderTextInput
+    value={action.investitureCost ?? ""}
+    placeholder="Investiture cost (example: 1)"
+    onChange={(value) => updateAction(index, "investitureCost", value)}
+  />
+</div>
 
         <div style={{ marginBottom: 6 }}>
           <BuilderTextInput
