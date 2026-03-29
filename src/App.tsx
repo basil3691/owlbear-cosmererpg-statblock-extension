@@ -496,14 +496,15 @@ return richParts.map((chunk, richIndex) => {
   }
 
   return (
-    <>
-      {lines.map((line, i) => (
-        <div key={i} style={{ marginTop: i === 0 ? 0 : 6 }}>
-          {renderInline(line, i)}
-        </div>
-      ))}
-    </>
-  );
+  <>
+    {lines.map((line, i) => (
+      <span key={i} style={{ display: "inline" }}>
+        {i > 0 && <br />}
+        {renderInline(line, i)}
+      </span>
+    ))}
+  </>
+);
 }
 
 function SectionSummary({ title }: { title: string }) {
