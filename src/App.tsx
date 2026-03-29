@@ -475,17 +475,23 @@ function InlineRulesText({ text }: { text: string }) {
       if (part === "[opportunity]") return <OpportunityIcon key={key} />;
       if (part === "[complication]") return <ComplicationIcon key={key} />;
 
-      const boldParts = part.split(/(\*\*.*?\*\*)/g);
+      const richParts = part.split(/(\*\*.*?\*\*|\*.*?\*)/g);
 
-      return boldParts.map((chunk, boldIndex) => {
-        const boldKey = `${key}-${boldIndex}`;
+return richParts.map((chunk, richIndex) => {
+  const richKey = `${key}-${richIndex}`;
 
-        if (chunk.startsWith("**") && chunk.endsWith("**") && chunk.length >= 4) {
-          return <strong key={boldKey}>{chunk.slice(2, -2)}</strong>;
-        }
+  // bold
+  if (chunk.startsWith("**") && chunk.endsWith("**") && chunk.length >= 4) {
+    return <strong key={richKey}>{chunk.slice(2, -2)}</strong>;
+  }
 
-        return <span key={boldKey}>{chunk}</span>;
-      });
+  // italics
+  if (chunk.startsWith("*") && chunk.endsWith("*") && chunk.length >= 2 && !chunk.startsWith("**")) {
+    return <em key={richKey}>{chunk.slice(1, -1)}</em>;
+  }
+
+  return <span key={richKey}>{chunk}</span>;
+});
     });
   }
 
