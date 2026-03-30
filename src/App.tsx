@@ -458,16 +458,19 @@ function ComplicationIcon() {
       aria-hidden="true"
     >
       <g fill="#b71c1c">
-        <polygon points="50,6 59,28 41,28" />
-        <polygon points="76,16 71,35 57,25" />
-        <polygon points="94,40 74,45 78,29" />
-        <polygon points="88,68 69,60 83,50" />
-        <polygon points="50,94 41,72 59,72" />
-        <polygon points="24,84 29,65 43,75" />
-        <polygon points="6,60 26,55 22,71" />
-        <polygon points="12,32 31,40 17,50" />
+        <polygon points="50,6 59,26 41,26" />
+        <polygon points="71,12 67,30 53,22" />
+        <polygon points="88,28 72,39 67,24" />
+        <polygon points="94,50 74,55 74,45" />
+        <polygon points="88,72 67,76 72,61" />
+        <polygon points="71,88 53,78 67,70" />
+        <polygon points="50,94 41,74 59,74" />
+        <polygon points="29,88 33,70 47,78" />
+        <polygon points="12,72 28,61 33,76" />
+        <polygon points="6,50 26,45 26,55" />
+        <polygon points="12,28 33,24 28,39" />
+        <polygon points="29,12 47,22 33,30" />
       </g>
-      <circle cx="50" cy="50" r="20" fill="white" />
     </svg>
   );
 }
