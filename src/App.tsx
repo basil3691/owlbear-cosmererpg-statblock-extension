@@ -60,6 +60,12 @@ type Adversary = {
 
   actions?: ParsedAction[];
 
+  opportunitiesAndComplications?: {
+    intro?: string;
+    opportunity?: string;
+    complication?: string;
+  };
+
   tactics?: string;
 
   [key: string]: unknown;
@@ -226,6 +232,11 @@ const EMPTY_ADVERSARY: Adversary = {
   surgeSkills: [],
   features: [],
   actions: [],
+  opportunitiesAndComplications: {
+    intro: "",
+    opportunity: "",
+    complication: "",
+  },
   tactics: "",
 };
 
@@ -1082,12 +1093,46 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
         </>
       )}
 
+      {adversary.opportunitiesAndComplications &&
+  (adversary.opportunitiesAndComplications.intro ||
+    adversary.opportunitiesAndComplications.opportunity ||
+    adversary.opportunitiesAndComplications.complication) && (
+    <>
+      <div style={{ borderTop: "2px solid #c69a3a", margin: "8px 0" }} />
+      <details open>
+        <SectionSummary title="OPPORTUNITIES AND COMPLICATIONS" />
+
+        {adversary.opportunitiesAndComplications.intro && (
+          <p style={{ margin: "4px 0" }}>
+            <InlineRulesText text={adversary.opportunitiesAndComplications.intro} />
+          </p>
+        )}
+
+        {adversary.opportunitiesAndComplications.opportunity && (
+          <p style={{ margin: "4px 0" }}>
+            <strong>Opportunity.</strong>{" "}
+            <InlineRulesText text={adversary.opportunitiesAndComplications.opportunity} />
+          </p>
+        )}
+
+        {adversary.opportunitiesAndComplications.complication && (
+          <p style={{ margin: "4px 0" }}>
+            <strong>Complication.</strong>{" "}
+            <InlineRulesText text={adversary.opportunitiesAndComplications.complication} />
+          </p>
+        )}
+      </details>
+    </>
+)}
+
       {adversary.tactics && (
         <>
           <div style={{ borderTop: "2px solid #c69a3a", margin: "8px 0" }} />
           <details>
             <SectionSummary title="TACTICS" />
-            <p style={{ margin: "4px 0" }}>{adversary.tactics}</p>
+            <p style={{ margin: "4px 0" }}>
+              <InlineRulesText text={adversary.tactics} />
+            </p>
           </details>
         </>
       )}
@@ -1603,6 +1648,30 @@ export default function App() {
       },
     }));
   }
+
+  function updateOpportunitiesAndComplications(
+  field: "intro" | "opportunity" | "complication",
+  value: string
+) {
+  setSelectedLibraryId(null);
+  setBuilderAdversary((prev) => ({
+    ...prev,
+    opportunitiesAndComplications: {
+      intro: prev.opportunitiesAndComplications?.intro ?? "",
+      opportunity: prev.opportunitiesAndComplications?.opportunity ?? "",
+      complication: prev.opportunitiesAndComplications?.complication ?? "",
+      [field]: value,
+    },
+  }));
+}
+
+function updateTactics(value: string) {
+  setSelectedLibraryId(null);
+  setBuilderAdversary((prev) => ({
+    ...prev,
+    tactics: value,
+  }));
+}
 
   function updateFeature(index: number, field: "name" | "text", value: string) {
     setSelectedLibraryId(null);
@@ -2895,8 +2964,85 @@ export default function App() {
     ))}
     <button type="button" onClick={addAction}>Add Action</button>
   </div>
+  <details open>
+  <SectionSummary title="OPPORTUNITIES AND COMPLICATIONS" />
+
+  <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
+    <div>
+      <div
+        style={{
+          fontWeight: 600,
+          marginBottom: 4,
+          color: "#1f3b67",
+        }}
+      >
+        Intro
+      </div>
+      <BuilderTextArea
+        value={builderAdversary.opportunitiesAndComplications?.intro ?? ""}
+        onChange={(value) =>
+          updateOpportunitiesAndComplications("intro", value)
+        }
+        placeholder="The following options are available when an enemy gains an Opportunity or Complication during a scene with this adversary:"
+        rows={3}
+      />
+    </div>
+
+    <div>
+      <div
+        style={{
+          fontWeight: 600,
+          marginBottom: 4,
+          color: "#1f3b67",
+        }}
+      >
+        Opportunity
+      </div>
+      <BuilderTextArea
+        value={builderAdversary.opportunitiesAndComplications?.opportunity ?? ""}
+        onChange={(value) =>
+          updateOpportunitiesAndComplications("opportunity", value)
+        }
+        placeholder="An enemy can spend [opportunity] ..."
+        rows={4}
+      />
+    </div>
+
+    <div>
+      <div
+        style={{
+          fontWeight: 600,
+          marginBottom: 4,
+          color: "#1f3b67",
+        }}
+      >
+        Complication
+      </div>
+      <BuilderTextArea
+        value={builderAdversary.opportunitiesAndComplications?.complication ?? ""}
+        onChange={(value) =>
+          updateOpportunitiesAndComplications("complication", value)
+        }
+        placeholder="The GM can spend [complication] ..."
+        rows={4}
+      />
+    </div>
+  </div>
 </details>
 
+<details open>
+  <SectionSummary title="TACTICS" />
+
+  <div style={{ marginBottom: 12 }}>
+    <BuilderTextArea
+      value={builderAdversary.tactics ?? ""}
+      onChange={updateTactics}
+      placeholder="A Windrunner squire uses..."
+      rows={5}
+    />
+  </div>
+</details>
+</details>
           <details open>
             <SectionSummary title="TACTICS" />
             <BuilderTextArea
