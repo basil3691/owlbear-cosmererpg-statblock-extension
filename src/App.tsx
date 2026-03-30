@@ -1073,12 +1073,19 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
     </>
   )}
 
-  {!action.attackBonus &&
-    !action.reach &&
-    !action.range &&
-    !action.target &&
-    !action.graze &&
-    !action.hit && <InlineRulesText text={action.text} />}
+  {(action.text &&
+  !action.attackBonus &&
+  !action.reach &&
+  !action.range &&
+  !action.target &&
+  action.text !== action.notes &&
+  action.text !== action.graze &&
+  action.text !== action.hit) && (
+    <>
+      <InlineRulesText text={action.text} />
+      {" "}
+    </>
+)}
 
   {action.notes && action.notes !== action.text && (
     <>
@@ -1364,11 +1371,12 @@ export default function App() {
     return library.find((entry) => normalizeName(entry.name) === norm) ?? null;
   }, [library, selectedTokenName]);
 
-  const currentWorkingAdversary = useMemo(() => {
+ const currentWorkingAdversary = useMemo(() => {
   if (activeTab === "json") return parseJsonSafely(jsonInput);
+  if (activeTab === "builder") return builderAdversary;
   if (selectedLibraryEntry) return selectedLibraryEntry.data;
-  return builderAdversary;
-}, [selectedLibraryEntry, activeTab, jsonInput, builderAdversary]);
+  return attachedAdversary ?? builderAdversary;
+}, [activeTab, jsonInput, builderAdversary, selectedLibraryEntry, attachedAdversary]);
 
   const previewAdversary =
   activeTab === "json"
@@ -3037,24 +3045,11 @@ function updateTactics(value: string) {
     <BuilderTextArea
       value={builderAdversary.tactics ?? ""}
       onChange={updateTactics}
-      placeholder="A Windrunner squire uses..."
+      placeholder="Tactics"
       rows={5}
     />
   </div>
 </details>
-</details>
-          <details open>
-            <SectionSummary title="TACTICS" />
-            <BuilderTextArea
-              value={builderAdversary.tactics ?? ""}
-              placeholder="Tactics"
-              onChange={(value) => {
-                setSelectedLibraryId(null);
-                setBuilderAdversary((prev) => ({ ...prev, tactics: value }));
-              }}
-              rows={5}
-            />
-          </details>
         </div>
       )}
     </div>
