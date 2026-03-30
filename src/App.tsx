@@ -2177,14 +2177,24 @@ function updateTactics(value: string) {
         </div>
       )}
 
-      <div
-        ref={menuBarRef}
-        style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}
-      >
-        {renderMenu("library")}
-        {renderMenu("token")}
-        {renderMenu("export")}
-      </div>
+     <div
+  ref={menuBarRef}
+  style={{
+    display: "flex",
+    gap: 8,
+    marginBottom: 12,
+    flexWrap: "wrap",
+    position: "sticky",
+    top: 0,
+    zIndex: 100,
+    background: "#f7f1e3", // match your app background
+    padding: "6px 0",
+  }}
+>
+  {renderMenu("library")}
+  {renderMenu("token")}
+  {renderMenu("export")}
+</div>
 
       {showNewChooser && (
         <div
@@ -2833,7 +2843,6 @@ function updateTactics(value: string) {
             </div>
           </details>
 
-          <details open>
   <SectionSummary title="ACTIONS" />
   <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
     {(builderAdversary.actions ?? []).map((action, index) => (
