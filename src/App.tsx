@@ -1946,10 +1946,10 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
           setOpenMenu(isOpen ? null : menu);
         }}
         style={{
-  padding: "4px 9px",
+  padding: "3px 8px",
   borderRadius: 6,
   border: isOpen
-    ? "1.5px solid #1f3b67"
+    ? "1px solid #1f3b67"
     : isDisabled
     ? "1px solid #ddd2b0"
     : "1px solid #d8bc76",
@@ -1961,10 +1961,10 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   color: isDisabled ? "#b0a58a" : "#24406e",
   fontWeight: 700,
   cursor: isDisabled ? "not-allowed" : "pointer",
-  minHeight: 28,
+  minHeight: 24,
   whiteSpace: "nowrap",
-  opacity: isDisabled ? 0.65 : 0.9,
-  fontSize: 12,
+  opacity: isDisabled ? 0.65 : 0.88,
+  fontSize: 11,
 }}
       >
         {label} ▾
@@ -2160,14 +2160,14 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   style={{
   display: "grid",
   gridTemplateColumns: "1fr auto",
-  alignItems: "start",
-  columnGap: 28,
+  alignItems: "center",
+  columnGap: 18,
   marginBottom: 12,
   position: "sticky",
   top: 0,
   zIndex: 100,
   background: "#f7f1e3",
-  padding: "8px 12px 10px 12px",
+  padding: "12px 18px 12px 18px",
   borderBottom: "1px solid #d8c08a",
   boxShadow: openMenu ? "0 4px 10px rgba(0,0,0,0.06)" : "0 2px 6px rgba(0,0,0,0.04)",
 }}
@@ -2176,13 +2176,15 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   style={{
     display: "flex",
     justifyContent: "center",
+    alignItems: "center",
+    minHeight: 56,
   }}
 >
     <div
       style={{
         position: "relative",
         display: "flex",
-        alignItems: "flex-end",
+        alignItems: "center",
         background: "transparent",
       }}
     >
@@ -2230,10 +2232,10 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   style={{
     display: "flex",
     flexDirection: "column",
-    gap: 8,
+    gap: 6,
     alignItems: "flex-start",
-    paddingRight: 6,
-    paddingTop: 4,
+    justifySelf: "start",
+    marginRight: 10,
   }}
 >
   {renderMenu("library")}
