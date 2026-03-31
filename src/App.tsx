@@ -1973,10 +1973,11 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   fontWeight: 700,
   cursor: isDisabled ? "not-allowed" : "pointer",
   minHeight: 24,
-  minWidth: 80,
+  width: "100%",
   whiteSpace: "nowrap",
   opacity: isDisabled ? 0.65 : 0.88,
   fontSize: 11,
+  boxSizing: "border-box",
 }}
       >
         {label} ▾
@@ -2171,28 +2172,31 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   ref={menuBarRef}
   style={{
     display: "grid",
-    gridTemplateColumns: "1fr auto",
+    gridTemplateColumns: "minmax(0, 1fr) 110px",
     alignItems: "center",
-    columnGap: 16,
+    columnGap: 12,
     marginBottom: 12,
     position: "sticky",
     top: 0,
     zIndex: 100,
     background: "#f7f1e3",
-    padding: "12px 18px",
+    padding: "12px 16px",
     borderBottom: "1px solid #d8c08a",
     boxShadow: openMenu ? "0 4px 10px rgba(0,0,0,0.06)" : "0 2px 6px rgba(0,0,0,0.04)",
+    boxSizing: "border-box",
+    overflow: "hidden",
   }}
 >
   <div
     style={{
       position: "relative",
       display: "grid",
-      gridTemplateColumns: "repeat(3, max-content)",
+      gridTemplateColumns: "repeat(3, minmax(0, max-content))",
       justifyContent: "center",
-      columnGap: 24,
+      columnGap: 12,
       alignItems: "center",
       minHeight: 56,
+      minWidth: 0,
     }}
   >
     <TopNavTab
@@ -2241,6 +2245,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
       gap: 6,
       alignItems: "center",
       justifySelf: "center",
+      width: "110px",
     }}
   >
     {renderMenu("library")}
