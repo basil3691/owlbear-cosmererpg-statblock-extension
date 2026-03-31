@@ -1155,16 +1155,16 @@ function TabButton({
     <button
       onClick={onClick}
       style={{
-  padding: "6px 10px",
-  borderRadius: 8,
-  border: active ? "2px solid #1f3b67" : "1px solid #c69a3a",
-  background: active ? "#e8dcc0" : "#fffaf0",
-  color: "#1f3b67",
-  fontWeight: active ? "bold" : 500,
-  cursor: "pointer",
-  minHeight: 38,
-  whiteSpace: "nowrap",
-}}
+        padding: "8px 12px",
+        borderRadius: 6,
+        border: active ? "2px solid #1f3b67" : "1px solid #c69a3a",
+        background: active ? "#e8dcc0" : "#fffaf0",
+        color: "#1f3b67",
+        fontWeight: 600,
+        cursor: "pointer",
+        minHeight: 38,
+        whiteSpace: "nowrap",
+      }}
     >
       {children}
     </button>
@@ -1906,11 +1906,13 @@ function updateTactics(value: string) {
           style={{
             padding: "8px 12px",
             borderRadius: 6,
-            border: "1px solid #c69a3a",
+            border: isOpen ? "2px solid #1f3b67" : "1px solid #c69a3a",
             background: isOpen ? "#e8dcc0" : "#fffaf0",
             color: "#1f3b67",
             fontWeight: 600,
             cursor: "pointer",
+            minHeight: 38,
+            whiteSpace: "nowrap",
           }}
         >
           {label} ▾
@@ -2088,16 +2090,14 @@ function updateTactics(value: string) {
   {renderMenu("token")}
 
   <div
-    style={{
-      display: "flex",
-      gap: 6,
-      marginLeft: 6,
-      paddingLeft: 8,
-      borderLeft: "1px solid #d8c08a",
-      flexWrap: "nowrap",
-      whiteSpace: "nowrap",
-    }}
-  >
+  style={{
+    display: "flex",
+    gap: 6,
+    marginLeft: 6,
+    flexWrap: "nowrap",
+    whiteSpace: "nowrap",
+  }}
+>
     <TabButton active={activeTab === "preview"} onClick={() => setActiveTab("preview")}>
       Preview
     </TabButton>
