@@ -645,6 +645,72 @@ function BuilderTextArea({
   );
 }
 
+function BuilderChoiceButton({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        padding: "7px 12px",
+        borderRadius: 8,
+        border: active ? "2px solid #c69a3a" : "1px solid #d8c08a",
+        background: active ? "#efe3c9" : "#fffaf0",
+        color: "#1f3b67",
+        fontWeight: active ? 700 : 600,
+        cursor: "pointer",
+        fontSize: 13,
+        transition: "all 0.15s ease",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function BuilderChoiceRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        flexWrap: "wrap",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          color: "#1f3b67",
+          letterSpacing: 0.4,
+          textTransform: "uppercase",
+          minWidth: 70,
+        }}
+      >
+        {label}:
+      </div>
+
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 type PreviewBoundaryProps = {
   children: React.ReactNode;
 };
@@ -728,12 +794,24 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
 
       <p
   style={{
-    margin: "0 0 10px 0",
+    margin: "0 0 2px 0",
     fontStyle: "italic",
     color: "#222",
   }}
 >
   {makeSummary(adversary)}
+</p>
+
+<p
+  style={{
+    margin: "0 0 10px 0",
+    fontSize: 11,
+    letterSpacing: 0.3,
+    color: "#6b7280",
+    textTransform: "uppercase",
+  }}
+>
+  {adversary.source ?? "Official"} {adversary.setting ?? "Stormlight"}
 </p>
 
       <div
@@ -1585,6 +1663,22 @@ const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
     setActiveTab("builder");
     setOpenMenu(null);
   }
+
+  function updateBuilderSource(value: "Official" | "Homebrew") {
+  setSelectedLibraryId(null);
+  setBuilderAdversary((prev) => ({
+    ...prev,
+    source: value,
+  }));
+}
+
+function updateBuilderSetting(value: string) {
+  setSelectedLibraryId(null);
+  setBuilderAdversary((prev) => ({
+    ...prev,
+    setting: value,
+  }));
+}
 
   function setPhysical<K extends keyof NonNullable<Adversary["physical"]>>(key: K, value: number) {
     setSelectedLibraryId(null);
@@ -2663,36 +2757,90 @@ background: isOpen
           }}
         >
           <BuilderCard>
-          <details open>
-            <SectionSummary title="BASIC INFO" />
-            <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
-              <BuilderTextInput
-                value={builderAdversary.name}
-                placeholder="Name"
-                onChange={(value) => {
-                  setSelectedLibraryId(null);
-                  setBuilderAdversary((prev) => ({ ...prev, name: value }));
-                }}
-              />
-              <BuilderTextInput
-                value={builderAdversary.tier}
-                placeholder="Tier"
-                onChange={(value) => {
-                  setSelectedLibraryId(null);
-                  setBuilderAdversary((prev) => ({ ...prev, tier: value }));
-                }}
-              />
-              <BuilderTextInput
-                value={builderAdversary.type}
-                placeholder="Type"
-                onChange={(value) => {
-                  setSelectedLibraryId(null);
-                  setBuilderAdversary((prev) => ({ ...prev, type: value }));
-                }}
-              />
-            </div>
-          </details>
-          </BuilderCard>
+  <details open>
+    <SectionSummary title="BASIC INFO" />
+    <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
+      <BuilderChoiceRow label="Source">
+        <BuilderChoiceButton
+          label="Official"
+          active={(builderAdversary.source ?? "Official") === "Official"}
+          onClick={() => updateBuilderSource("Official")}
+        />
+        <BuilderChoiceButton
+          label="Homebrew"
+          active={builderAdversary.source === "Homebrew"}
+          onClick={() => updateBuilderSource("Homebrew")}
+        />
+      </BuilderChoiceRow>
+
+      <BuilderChoiceRow label="Setting">
+        <BuilderChoiceButton
+          label="Stormlight"
+          active={(builderAdversary.setting ?? "Stormlight") === "Stormlight"}
+          onClick={() => updateBuilderSetting("Stormlight")}
+        />
+        <BuilderChoiceButton
+          label="Mistborn"
+          active={builderAdversary.setting === "Mistborn"}
+          onClick={() => updateBuilderSetting("Mistborn")}
+        />
+        <BuilderChoiceButton
+          label="Other"
+          active={
+            Boolean(builderAdversary.setting) &&
+            builderAdversary.setting !== "Stormlight" &&
+            builderAdversary.setting !== "Mistborn"
+          }
+          onClick={() => {
+            if (
+              !builderAdversary.setting ||
+              builderAdversary.setting === "Stormlight" ||
+              builderAdversary.setting === "Mistborn"
+            ) {
+              updateBuilderSetting("");
+            }
+          }}
+        />
+      </BuilderChoiceRow>
+
+      {((builderAdversary.setting ?? "Stormlight") !== "Stormlight" &&
+        builderAdversary.setting !== "Mistborn") && (
+        <BuilderTextInput
+          value={builderAdversary.setting}
+          placeholder="Custom setting"
+          onChange={(value) => updateBuilderSetting(value)}
+        />
+      )}
+
+      <BuilderTextInput
+        value={builderAdversary.name}
+        placeholder="Name"
+        onChange={(value) => {
+          setSelectedLibraryId(null);
+          setBuilderAdversary((prev) => ({ ...prev, name: value }));
+        }}
+      />
+
+      <BuilderTextInput
+        value={builderAdversary.tier}
+        placeholder="Tier"
+        onChange={(value) => {
+          setSelectedLibraryId(null);
+          setBuilderAdversary((prev) => ({ ...prev, tier: value }));
+        }}
+      />
+
+      <BuilderTextInput
+        value={builderAdversary.type}
+        placeholder="Type"
+        onChange={(value) => {
+          setSelectedLibraryId(null);
+          setBuilderAdversary((prev) => ({ ...prev, type: value }));
+        }}
+      />
+    </div>
+  </details>
+</BuilderCard>
           <BuilderCard>
           <details open>
             <SectionSummary title="STATS" />
