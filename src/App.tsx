@@ -1918,25 +1918,25 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
 
   return (
     <div style={{
-  padding: "5px 10px",
+  padding: "4px 9px",
   borderRadius: 6,
   border: isOpen
-    ? "2px solid #1f3b67"
+    ? "1.5px solid #1f3b67"
     : isDisabled
-    ? "1px solid #d3c6a0"
-    : "1px solid #d3b066",
+    ? "1px solid #ddd2b0"
+    : "1px solid #d8bc76",
   background: isOpen
-    ? "#ece1c8"
+    ? "#efe3c9"
     : isDisabled
-    ? "#f3eee0"
-    : "#fbf6ea",
-  color: isDisabled ? "#a79c80" : "#1f3b67",
+    ? "#f4efe2"
+    : "#faf5e8",
+  color: isDisabled ? "#b0a58a" : "#24406e",
   fontWeight: 700,
   cursor: isDisabled ? "not-allowed" : "pointer",
-  minHeight: 30,
+  minHeight: 28,
   whiteSpace: "nowrap",
-  opacity: isDisabled ? 0.7 : 0.95,
-  fontSize: 13,
+  opacity: isDisabled ? 0.65 : 0.9,
+  fontSize: 12,
 }}>
       <button
         onClick={() => {
@@ -2172,11 +2172,12 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   }}
 >
   <div
-    style={{
-      display: "flex",
-      justifyContent: "center",
-    }}
-  >
+  style={{
+    display: "flex",
+    justifyContent: "center",
+    paddingLeft: 36,
+  }}
+>
     <div
       style={{
         position: "relative",
@@ -2202,34 +2203,33 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
       />
 
       <div
-        style={{
-          position: "absolute",
-          bottom: 0,
-          height: 4,
-          width: 92,
-          borderRadius: 3,
-          background: "#c69a3a",
-          transition: "transform 0.22s ease",
-          transform:
-            activeTab === "builder"
-              ? "translateX(18px)"
-              : activeTab === "library"
-              ? "translateX(126px)"
-              : "translateX(234px)",
-        }}
-      />
+  style={{
+    position: "absolute",
+    bottom: 0,
+    height: 4,
+    width: activeTab === "builder" ? 94 : activeTab === "library" ? 96 : 92,
+    borderRadius: 3,
+    background: "#c69a3a",
+    transition: "transform 0.22s ease, width 0.22s ease",
+    transform:
+      activeTab === "builder"
+        ? "translateX(18px)"
+        : activeTab === "library"
+        ? "translateX(144px)"
+        : "translateX(274px)",
+  }}
+/>
     </div>
   </div>
 
   <div
-    style={{
-      display: "flex",
-      flexDirection: "column",
-      gap: 6,
-      alignItems: "stretch",
-      minWidth: 84,
-    }}
-  >
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    alignItems: "flex-end",
+  }}
+>
     {renderMenu("library")}
     {renderMenu("token")}
   </div>
