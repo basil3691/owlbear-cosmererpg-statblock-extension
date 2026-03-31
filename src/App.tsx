@@ -1142,6 +1142,23 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
   );
 }
 
+function BuilderCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        background: "#fffaf0",
+        border: "1px solid #d8c08a",
+        borderRadius: 10,
+        padding: 10,
+        marginBottom: 12,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function App() {
   const [ready, setReady] = useState(false);
   const [selection, setSelection] = useState<string[]>([]);
@@ -1882,22 +1899,24 @@ function updateTactics(value: string) {
         padding: "6px 10px",
         cursor: "pointer",
         color: active ? "#1f3b67" : "#6b7a99",
-        fontWeight: active ? 700 : 600,
+        fontWeight: active ? 800 : 600,
         fontSize: 13,
-        letterSpacing: 0.5,
+        letterSpacing: 0.8,
         textTransform: "uppercase",
+        transition: "color 0.18s ease, transform 0.18s ease",
+        transform: active ? "translateY(0)" : "translateY(1px)",
       }}
     >
       <div>{label}</div>
 
       <div
         style={{
-          marginTop: 4,
-          height: 3,
-          width: "100%",
-          borderRadius: 2,
-          background: active ? "#c69a3a" : "transparent",
-          transition: "all 0.2s",
+          marginTop: 6,
+          height: 4,
+          width: active ? 72 : 0,
+          borderRadius: 3,
+          background: "#c69a3a",
+          transition: "width 0.2s ease",
         }}
       />
     </div>
@@ -1919,7 +1938,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
           setOpenMenu(isOpen ? null : menu);
         }}
         style={{
-          padding: "8px 12px",
+          padding: "6px 10px",
           borderRadius: 6,
           border: isOpen
             ? "2px solid #1f3b67"
@@ -1934,9 +1953,10 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
           color: isDisabled ? "#a79c80" : "#1f3b67",
           fontWeight: 600,
           cursor: isDisabled ? "not-allowed" : "pointer",
-          minHeight: 38,
+          minHeight: 32,
           whiteSpace: "nowrap",
           opacity: isDisabled ? 0.7 : 1,
+          fontSize: 14,
         }}
       >
         {label} ▾
@@ -2077,12 +2097,23 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
       />
 
       <style>
-        {`
-          details[open] .arrow {
-            transform: rotate(90deg);
-          }
-        `}
-      </style>
+  {`
+    details[open] .arrow {
+      transform: rotate(90deg);
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(3px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  `}
+</style>
 
       <h2
   style={{
@@ -2120,7 +2151,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   ref={menuBarRef}
   style={{
     display: "flex",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
     marginBottom: 12,
     position: "sticky",
@@ -2129,9 +2160,10 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
     background: "#f7f1e3",
     padding: "8px 0 10px 0",
     borderBottom: "1px solid #d8c08a",
+    boxShadow: openMenu ? "0 4px 10px rgba(0,0,0,0.06)" : "0 2px 6px rgba(0,0,0,0.04)",
   }}
 >
-  <div style={{ display: "flex", gap: 16 }}>
+  <div style={{ display: "flex", gap: 16, alignItems: "flex-end" }}>
     <TopNavTab
       label="Builder"
       active={activeTab === "builder"}
@@ -2149,7 +2181,15 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
     />
   </div>
 
-  <div style={{ display: "flex", gap: 8 }}>
+  <div
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      gap: 6,
+      alignItems: "stretch",
+      minWidth: 92,
+    }}
+  >
     {renderMenu("library")}
     {renderMenu("token")}
   </div>
@@ -2190,7 +2230,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
       )}
 
       {activeTab === "preview" && (
-  <>
+  <div style={{ animation: "fadeIn 0.18s ease" }}>
     {previewAdversary ? (
       <PreviewErrorBoundary>
         <AdversaryCard adversary={previewAdversary} />
@@ -2207,18 +2247,19 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
         No adversary selected yet.
       </div>
     )}
-  </>
+  </div>
 )}
 
       {activeTab === "library" && (
-        <div
-          style={{
-            border: "1px solid #c69a3a",
-            borderRadius: 8,
-            padding: 12,
-            background: "#fffaf0",
-          }}
-        >
+  <div style={{ animation: "fadeIn 0.18s ease" }}>
+    <div
+      style={{
+        border: "1px solid #c69a3a",
+        borderRadius: 8,
+        padding: 12,
+        background: "#fffaf0",
+      }}
+    >
           <div style={{ marginBottom: 10 }}>
             <BuilderTextInput
               value={librarySearch}
@@ -2439,13 +2480,15 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
                   </div>
                 ))}
               </div>
-            </div>
+            </div>  
           )}
+        </div>
         </div>
       )}
 
       {activeTab === "builder" && (
-        <div
+  <div style={{ animation: "fadeIn 0.18s ease" }}>
+    <div
           style={{
             border: "1px solid #c69a3a",
             borderRadius: 8,
@@ -2453,6 +2496,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
             background: "#fffaf0",
           }}
         >
+          <BuilderCard>
           <details open>
             <SectionSummary title="BASIC INFO" />
             <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
@@ -2482,6 +2526,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
               />
             </div>
           </details>
+          </BuilderCard>
 
           <details open>
             <SectionSummary title="STATS" />
@@ -2970,6 +3015,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
     />
   </div>
 </details>
+        </div>
         </div>
       )}
     </div>
