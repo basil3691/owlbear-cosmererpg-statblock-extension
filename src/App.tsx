@@ -2167,7 +2167,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   top: 0,
   zIndex: 100,
   background: "#f7f1e3",
-  padding: "12px 18px 12px 18px",
+  padding: "12px 28px 12px 18px",
   borderBottom: "1px solid #d8c08a",
   boxShadow: openMenu ? "0 4px 10px rgba(0,0,0,0.06)" : "0 2px 6px rgba(0,0,0,0.04)",
 }}
