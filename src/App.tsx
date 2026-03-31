@@ -1205,6 +1205,16 @@ export default function App() {
 
 const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
 
+useEffect(() => {
+  const activeEl = tabRefs.current[activeTab];
+  if (!activeEl) return;
+
+  setTabIndicator({
+    left: activeEl.offsetLeft,
+    width: activeEl.offsetWidth,
+  });
+}, [activeTab]);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LIBRARY_STORAGE_KEY);
@@ -1963,25 +1973,16 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
       {isOpen && !isDisabled && (
         <div
           style={{
-  padding: "4px 10px",
-  borderRadius: 6,
-  border: isOpen
-    ? "1px solid #1f3b67"
-    : isDisabled
-    ? "1px solid #ddd2b0"
-    : "1px solid #d8bc76",
-  background: isOpen
-    ? "#efe3c9"
-    : isDisabled
-    ? "#f4efe2"
-    : "#faf5e8",
-  color: isDisabled ? "#b0a58a" : "#24406e",
-  fontWeight: 700,
-  cursor: isDisabled ? "not-allowed" : "pointer",
-  minHeight: 28,
-  whiteSpace: "nowrap",
-  opacity: isDisabled ? 0.65 : 0.92,
-  fontSize: 12,
+  position: "absolute",
+  top: "calc(100% + 6px)",
+  left: 0,
+  minWidth: 210,
+  background: "#fffaf0",
+  border: "1px solid #c69a3a",
+  borderRadius: 8,
+  boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
+  padding: 6,
+  zIndex: 50,
 }}
         >
           {menu === "library" && (
