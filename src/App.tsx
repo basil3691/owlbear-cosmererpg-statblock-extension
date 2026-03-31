@@ -2235,7 +2235,8 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
     gap: 6,
     alignItems: "flex-start",
     justifySelf: "start",
-    marginRight: 10,
+    marginRight: 28,
+    paddingTop: 2,
   }}
 >
   {renderMenu("library")}
