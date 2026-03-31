@@ -2109,8 +2109,7 @@ function updateTactics(value: string) {
   <div
   style={{
     display: "flex",
-    gap: 6,
-    marginLeft: 6,
+    gap: 4,
     flexWrap: "nowrap",
     whiteSpace: "nowrap",
   }}
