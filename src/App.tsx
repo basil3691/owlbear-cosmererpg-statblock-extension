@@ -17,6 +17,9 @@ type Adversary = {
   species?: string;
   role?: string;
 
+  source?: "Official" | "Homebrew";
+  setting?: string;
+
   physical?: {
     str?: number;
     def?: number;
@@ -212,12 +215,14 @@ const EMPTY_ADVERSARY: Adversary = {
   name: "",
   tier: "",
   type: "",
+  source: "Official",
+  setting: "Stormlight",
   physical: { str: 0, def: 10, spd: 0 },
   cognitive: { int: 0, def: 10, wil: 0 },
   spiritual: { awa: 0, def: 10, pre: 0 },
-  health: 1,
+  health: 11,
   healthRange: "",
-  focus: 0,
+  focus: 4,
   investiture: 0,
   deflect: 0,
   movement: "",
