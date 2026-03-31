@@ -2174,7 +2174,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
     display: "grid",
     gridTemplateColumns: "minmax(0, 1fr) 110px",
     alignItems: "center",
-    columnGap: 25,
+    columnGap: 3,
     marginBottom: 12,
     position: "sticky",
     top: 0,
