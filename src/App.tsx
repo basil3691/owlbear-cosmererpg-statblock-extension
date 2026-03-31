@@ -2527,7 +2527,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
             </div>
           </details>
           </BuilderCard>
-
+          <BuilderCard>
           <details open>
             <SectionSummary title="STATS" />
             <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10, marginBottom: 12 }}>
@@ -2628,7 +2628,9 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
               }}
             />
           </details>
+          </BuilderCard>
 
+          <BuilderCard>
           <details open>
             <SectionSummary title="DETAILS" />
             <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
@@ -2683,7 +2685,9 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
               />
             </div>
           </details>
-
+          </BuilderCard>
+          
+          <BuilderCard>
           <details open>
             <SectionSummary title="SKILLS" />
             <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
@@ -2760,7 +2764,9 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
               </div>
             </div>
           </details>
+          </BuilderCard>
 
+          <BuilderCard>
           <details open>
             <SectionSummary title="FEATURES" />
             <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
@@ -2795,6 +2801,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
               <button type="button" onClick={addFeature}>Add Feature</button>
             </div>
           </details>
+          </BuilderCard>
 
   <SectionSummary title="ACTIONS" />
   <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
