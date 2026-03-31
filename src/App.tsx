@@ -1206,13 +1206,24 @@ export default function App() {
 const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
 
 useEffect(() => {
-  const activeEl = tabRefs.current[activeTab];
-  if (!activeEl) return;
+  const updateIndicator = () => {
+    const activeEl = tabRefs.current[activeTab];
+    if (!activeEl) return;
 
-  setTabIndicator({
-    left: activeEl.offsetLeft,
-    width: activeEl.offsetWidth,
-  });
+    setTabIndicator({
+      left: activeEl.offsetLeft,
+      width: activeEl.offsetWidth,
+    });
+  };
+
+  updateIndicator();
+  const id = requestAnimationFrame(updateIndicator);
+
+  window.addEventListener("resize", updateIndicator);
+  return () => {
+    cancelAnimationFrame(id);
+    window.removeEventListener("resize", updateIndicator);
+  };
 }, [activeTab]);
 
   useEffect(() => {
@@ -2235,7 +2246,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
     gap: 6,
     alignItems: "flex-start",
     justifySelf: "start",
-    marginRight: 28,
+    marginLeft: -18,
     paddingTop: 2,
   }}
 >
