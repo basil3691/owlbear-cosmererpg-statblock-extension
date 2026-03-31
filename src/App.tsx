@@ -6,8 +6,8 @@ const LIBRARY_STORAGE_KEY = "eli-statblocks-library";
 const LIBRARY_BACKUP_KEY = "eli-statblocks-library-backup";
 
 type ActionCost = "free" | "reaction" | 1 | 2 | 3;
-type ActiveTab = "preview" | "builder" | "json" | "library";
-type OpenMenu = "library" | "token" | "export" | null;
+type ActiveTab = "preview" | "builder" | "library";
+type OpenMenu = "library" | "token" | null;
 
 type Adversary = {
   name?: string;
@@ -253,14 +253,6 @@ function splitLines(text: string): string[] {
 
 function joinLines(items?: string[]): string {
   return (items ?? []).join("\n");
-}
-
-function parseJsonSafely(text: string): Adversary | null {
-  try {
-    return JSON.parse(text) as Adversary;
-  } catch {
-    return null;
-  }
 }
 
 function normalizeName(value: string) {
@@ -1183,7 +1175,6 @@ export default function App() {
   const [selectedTokenName, setSelectedTokenName] = useState("");
   const [attachedAdversary, setAttachedAdversary] = useState<Adversary | null>(null);
 
-  const [jsonInput, setJsonInput] = useState("");
   const [builderAdversary, setBuilderAdversary] = useState<Adversary>(EMPTY_ADVERSARY);
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
   const [showNewChooser, setShowNewChooser] = useState(false);
@@ -1375,17 +1366,13 @@ export default function App() {
   }, [library, selectedTokenName]);
 
  const currentWorkingAdversary = useMemo(() => {
-  if (activeTab === "json") return parseJsonSafely(jsonInput);
   if (activeTab === "builder") return builderAdversary;
   if (selectedLibraryEntry) return selectedLibraryEntry.data;
   return attachedAdversary ?? builderAdversary;
-}, [activeTab, jsonInput, builderAdversary, selectedLibraryEntry, attachedAdversary]);
+}, [activeTab, builderAdversary, selectedLibraryEntry, attachedAdversary]);
 
   const previewAdversary =
-  activeTab === "json"
-    ? currentWorkingAdversary
-    : selectedLibraryEntry?.data ?? attachedAdversary ?? currentWorkingAdversary;
-
+  selectedLibraryEntry?.data ?? attachedAdversary ?? currentWorkingAdversary;
   function getEntryLetter(name: string) {
     const first = name.trim()?.[0]?.toUpperCase();
     return first && /[A-Z]/.test(first) ? first : "#";
@@ -1510,20 +1497,13 @@ export default function App() {
   }, [sortedFilteredLibrary]);
 
   function saveCurrentToLibrary() {
-    let current: Adversary | null = null;
+  let current: Adversary | null = null;
 
-    if (selectedLibraryEntry) {
-      current = selectedLibraryEntry.data;
-    } else if (activeTab === "json") {
-      const parsed = parseJsonSafely(jsonInput.trim());
-      if (!parsed) {
-        setStatusMessage("Invalid JSON.");
-        return;
-      }
-      current = parsed;
-    } else {
-      current = builderAdversary;
-    }
+  if (selectedLibraryEntry) {
+    current = selectedLibraryEntry.data;
+  } else {
+    current = builderAdversary;
+  }
 
     if (!current.name || !current.name.trim()) {
       setStatusMessage("Please give the adversary a name first.");
@@ -1560,20 +1540,13 @@ export default function App() {
   }
 
   function saveAsNewToLibrary() {
-    let current: Adversary | null = null;
+  let current: Adversary | null = null;
 
-    if (selectedLibraryEntry) {
-      current = selectedLibraryEntry.data;
-    } else if (activeTab === "json") {
-      const parsed = parseJsonSafely(jsonInput.trim());
-      if (!parsed) {
-        setStatusMessage("Invalid JSON.");
-        return;
-      }
-      current = parsed;
-    } else {
-      current = builderAdversary;
-    }
+  if (selectedLibraryEntry) {
+    current = selectedLibraryEntry.data;
+  } else {
+    current = builderAdversary;
+  }
 
     if (!current.name || !current.name.trim()) {
       setStatusMessage("Please give the adversary a name first.");
@@ -1600,23 +1573,12 @@ export default function App() {
   function loadLibraryEntry(entry: LibraryEntry) {
     setSelectedLibraryId(entry.id);
     setBuilderAdversary(entry.data);
-    setJsonInput(JSON.stringify(entry.data, null, 2));
   }
 
   function startNewBuilderAdversary() {
     setSelectedLibraryId(null);
     setBuilderAdversary(EMPTY_ADVERSARY);
-    setJsonInput(JSON.stringify(EMPTY_ADVERSARY, null, 2));
     setActiveTab("builder");
-    setShowNewChooser(false);
-    setOpenMenu(null);
-  }
-
-  function startNewJsonAdversary() {
-    setSelectedLibraryId(null);
-    setBuilderAdversary(EMPTY_ADVERSARY);
-    setJsonInput(JSON.stringify(EMPTY_ADVERSARY, null, 2));
-    setActiveTab("json");
     setShowNewChooser(false);
     setOpenMenu(null);
   }
@@ -1989,8 +1951,7 @@ function updateTactics(value: string) {
   function renderMenu(menu: Exclude<OpenMenu, null>) {
     const isOpen = openMenu === menu;
 
-    const label =
-      menu === "library" ? "Library" : menu === "token" ? "Token" : "Export";
+    const label = menu === "library" ? "Library" : "Attach";
 
     return (
       <div style={{ position: "relative" }}>
@@ -2096,23 +2057,6 @@ function updateTactics(value: string) {
                 </MenuAction>
               </>
             )}
-
-            {menu === "export" && (
-              <MenuAction
-                onClick={() => {
-                  if (!currentWorkingAdversary) {
-                    setStatusMessage("Nothing to export.");
-                    return;
-                  }
-                  exportJsonFile(currentWorkingAdversary);
-                  setStatusMessage("Current JSON exported.");
-                  setOpenMenu(null);
-                }}
-                disabled={!currentWorkingAdversary}
-              >
-                Export Current JSON
-              </MenuAction>
-            )}
           </div>
         )}
       </div>
@@ -2187,13 +2131,12 @@ function updateTactics(value: string) {
     position: "sticky",
     top: 0,
     zIndex: 100,
-    background: "#f7f1e3", // match your app background
+    background: "#f7f1e3",
     padding: "6px 0",
   }}
 >
   {renderMenu("library")}
   {renderMenu("token")}
-  {renderMenu("export")}
 </div>
 
       {showNewChooser && (
@@ -2210,9 +2153,8 @@ function updateTactics(value: string) {
             Create New Adversary
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={startNewBuilderAdversary}>Use Builder</button>
-            <button onClick={startNewJsonAdversary}>Use JSON</button>
-          </div>
+  <button onClick={startNewBuilderAdversary}>Create New Adversary</button>
+</div>
         </div>
       )}
 
@@ -2247,19 +2189,41 @@ function updateTactics(value: string) {
       )}
 
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-        <TabButton active={activeTab === "preview"} onClick={() => setActiveTab("preview")}>
-          Preview
-        </TabButton>
-        <TabButton active={activeTab === "builder"} onClick={() => setActiveTab("builder")}>
-          Builder
-        </TabButton>
-        <TabButton active={activeTab === "json"} onClick={() => setActiveTab("json")}>
-          Editor
-        </TabButton>
-        <TabButton active={activeTab === "library"} onClick={() => setActiveTab("library")}>
-          Library
-        </TabButton>
-      </div>
+  <TabButton active={activeTab === "preview"} onClick={() => setActiveTab("preview")}>
+    Preview
+  </TabButton>
+  <TabButton active={activeTab === "builder"} onClick={() => setActiveTab("builder")}>
+    Builder
+  </TabButton>
+  <TabButton active={activeTab === "library"} onClick={() => setActiveTab("library")}>
+    Library
+  </TabButton>
+</div>
+
+{activeTab === "builder" && (
+  <div
+    style={{
+      display: "flex",
+      gap: 8,
+      marginBottom: 12,
+      flexWrap: "wrap",
+    }}
+  >
+    <button onClick={saveCurrentToLibrary}>Save to Library</button>
+    <button
+      onClick={() => {
+        if (!currentWorkingAdversary) {
+          setStatusMessage("Nothing to export.");
+          return;
+        }
+        exportJsonFile(currentWorkingAdversary);
+        setStatusMessage("Current JSON exported.");
+      }}
+    >
+      Export Current JSON
+    </button>
+  </div>
+)}
 
       {activeTab === "preview" && (
   <>
@@ -2298,6 +2262,24 @@ function updateTactics(value: string) {
               placeholder="Search adversaries..."
             />
           </div>
+
+          <div
+      style={{
+        display: "flex",
+        gap: 8,
+        flexWrap: "wrap",
+        marginBottom: 12,
+      }}
+    >
+      <button onClick={() => setShowNewChooser((prev) => !prev)}>New</button>
+      <button onClick={saveCurrentToLibrary}>Save</button>
+      <button onClick={saveAsNewToLibrary}>Save As New</button>
+      <button onClick={() => importLibraryInputRef.current?.click()}>Import File</button>
+      <button onClick={importFromText}>Paste JSON</button>
+      <button onClick={exportLibrary}>Export Library</button>
+      <button onClick={exportLibraryBackup}>Export Backup</button>
+      <button onClick={restoreLibraryBackup}>Restore Backup</button>
+    </div>
 
           {sortedFilteredLibrary.length === 0 ? (
             <p style={{ margin: 0 }}>No saved adversaries found.</p>
@@ -2514,26 +2496,6 @@ function updateTactics(value: string) {
             </div>
           )}
         </div>
-      )}
-
-      {activeTab === "json" && (
-        <textarea
-          placeholder="Paste adversary JSON here..."
-          value={jsonInput}
-          onChange={(e) => {
-            setSelectedLibraryId(null);
-            setJsonInput(e.target.value);
-          }}
-          style={{
-            width: "100%",
-            height: 260,
-            border: "1px solid #c69a3a",
-            borderRadius: 8,
-            padding: 10,
-            background: "#fffaf0",
-            boxSizing: "border-box",
-          }}
-        />
       )}
 
       {activeTab === "builder" && (
