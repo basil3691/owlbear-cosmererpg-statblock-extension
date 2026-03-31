@@ -1951,8 +1951,7 @@ function updateTactics(value: string) {
   function renderMenu(menu: Exclude<OpenMenu, null>) {
     const isOpen = openMenu === menu;
 
-    const label = menu === "library" ? "Library" : "Attach";
-
+    const label = menu === "library" ? "File" : "Attach";
     return (
       <div style={{ position: "relative" }}>
         <button
@@ -1993,8 +1992,6 @@ function updateTactics(value: string) {
     <MenuAction onClick={() => setShowNewChooser((prev) => !prev)}>
       New Adversary
     </MenuAction>
-    <MenuAction onClick={saveCurrentToLibrary}>Save</MenuAction>
-    <MenuAction onClick={saveAsNewToLibrary}>Save As New</MenuAction>
 
     <div style={{ position: "relative" }}>
       <MenuAction
@@ -2125,6 +2122,7 @@ function updateTactics(value: string) {
   ref={menuBarRef}
   style={{
     display: "flex",
+    alignItems: "center",
     gap: 8,
     marginBottom: 12,
     flexWrap: "wrap",
@@ -2133,10 +2131,53 @@ function updateTactics(value: string) {
     zIndex: 100,
     background: "#f7f1e3",
     padding: "6px 0",
+    borderBottom: "1px solid #d8c08a",
   }}
 >
   {renderMenu("library")}
   {renderMenu("token")}
+
+  <div style={{ display: "flex", gap: 8, marginLeft: 8, flexWrap: "wrap" }}>
+    <TabButton active={activeTab === "preview"} onClick={() => setActiveTab("preview")}>
+      Preview
+    </TabButton>
+    <TabButton active={activeTab === "builder"} onClick={() => setActiveTab("builder")}>
+      Builder
+    </TabButton>
+    <TabButton active={activeTab === "library"} onClick={() => setActiveTab("library")}>
+      Library
+    </TabButton>
+  </div>
+
+  <div style={{ display: "flex", gap: 8, marginLeft: "auto", flexWrap: "wrap" }}>
+    {activeTab === "builder" && (
+      <>
+        <button onClick={saveCurrentToLibrary}>Save</button>
+        <button onClick={saveAsNewToLibrary}>Save As New</button>
+        <button
+          onClick={() => {
+            if (!currentWorkingAdversary) {
+              setStatusMessage("Nothing to export.");
+              return;
+            }
+            exportJsonFile(currentWorkingAdversary);
+            setStatusMessage("Current JSON exported.");
+          }}
+        >
+          Export JSON
+        </button>
+      </>
+    )}
+
+    {activeTab === "library" && (
+      <>
+        <button onClick={() => setShowNewChooser((prev) => !prev)}>New</button>
+        <button onClick={() => importLibraryInputRef.current?.click()}>Import File</button>
+        <button onClick={importFromText}>Paste JSON</button>
+        <button onClick={exportLibrary}>Export Library</button>
+      </>
+    )}
+  </div>
 </div>
 
       {showNewChooser && (
@@ -2158,7 +2199,11 @@ function updateTactics(value: string) {
         </div>
       )}
 
-      <p style={{ marginBottom: 8, color: "#5b5670" }}>Selected tokens: {selection.length}</p>
+      {selection.length > 0 && (
+        <p style={{ marginBottom: 8, color: "#5b5670" }}>
+          Selected tokens: {selection.length}
+        </p>
+      )}
 
       {autoMatchEntry && selection.length > 0 && !hasLinkedMetadata && (
         <div
@@ -2187,43 +2232,6 @@ function updateTactics(value: string) {
           </div>
         </div>
       )}
-
-      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-  <TabButton active={activeTab === "preview"} onClick={() => setActiveTab("preview")}>
-    Preview
-  </TabButton>
-  <TabButton active={activeTab === "builder"} onClick={() => setActiveTab("builder")}>
-    Builder
-  </TabButton>
-  <TabButton active={activeTab === "library"} onClick={() => setActiveTab("library")}>
-    Library
-  </TabButton>
-</div>
-
-{activeTab === "builder" && (
-  <div
-    style={{
-      display: "flex",
-      gap: 8,
-      marginBottom: 12,
-      flexWrap: "wrap",
-    }}
-  >
-    <button onClick={saveCurrentToLibrary}>Save to Library</button>
-    <button
-      onClick={() => {
-        if (!currentWorkingAdversary) {
-          setStatusMessage("Nothing to export.");
-          return;
-        }
-        exportJsonFile(currentWorkingAdversary);
-        setStatusMessage("Current JSON exported.");
-      }}
-    >
-      Export Current JSON
-    </button>
-  </div>
-)}
 
       {activeTab === "preview" && (
   <>
@@ -2262,24 +2270,6 @@ function updateTactics(value: string) {
               placeholder="Search adversaries..."
             />
           </div>
-
-          <div
-      style={{
-        display: "flex",
-        gap: 8,
-        flexWrap: "wrap",
-        marginBottom: 12,
-      }}
-    >
-      <button onClick={() => setShowNewChooser((prev) => !prev)}>New</button>
-      <button onClick={saveCurrentToLibrary}>Save</button>
-      <button onClick={saveAsNewToLibrary}>Save As New</button>
-      <button onClick={() => importLibraryInputRef.current?.click()}>Import File</button>
-      <button onClick={importFromText}>Paste JSON</button>
-      <button onClick={exportLibrary}>Export Library</button>
-      <button onClick={exportLibraryBackup}>Export Backup</button>
-      <button onClick={restoreLibraryBackup}>Restore Backup</button>
-    </div>
 
           {sortedFilteredLibrary.length === 0 ? (
             <p style={{ margin: 0 }}>No saved adversaries found.</p>
