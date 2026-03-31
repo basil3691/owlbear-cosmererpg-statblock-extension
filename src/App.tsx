@@ -2186,7 +2186,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
     position: "absolute",
     bottom: 0,
     height: 4,
-    width: 88,
+    width: 82,
     borderRadius: 3,
     background: "#c69a3a",
     transition: "transform 0.22s ease",
@@ -2362,10 +2362,11 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
                 ref={libraryListRef}
                 style={{
                   display: "grid",
-                  gap: 8,
+                  gap: 10,
                   maxHeight: 520,
                   overflowY: "auto",
-                  paddingRight: 4,
+                  paddingRight: 12,
+                  boxSizing: "border-box",
                 }}
               >
                 {sortedFilteredLibrary.map((entry) => (
@@ -2376,27 +2377,27 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
                     }}
                     data-letter={getEntryLetter(entry.name)}
                     style={{
-                      border:
-                        selectedLibraryId === entry.id
-                          ? "2px solid #1f3b67"
-                          : "1px solid #d8c08a",
-                      borderRadius: 8,
-                      padding: "8px 10px",
-                      background: selectedLibraryId === entry.id ? "#fff7df" : "#fff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 8,
-                      cursor: "pointer",
-                      minHeight: 44,
-                    }}
+  border:
+    selectedLibraryId === entry.id
+      ? "2px solid #1f3b67"
+      : "1px solid #d8c08a",
+  borderRadius: 8,
+  padding: "10px 12px",
+  background: selectedLibraryId === entry.id ? "#fff7df" : "#fff",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 10,
+  cursor: "pointer",
+  minHeight: 52,
+  boxSizing: "border-box",
+}}
                     onClick={() => {
                       loadLibraryEntry(entry);
                       setActiveTab("preview");
                     }}
                   >
-                    <div style={{ minWidth: 0, flex: 1, lineHeight: 1.2 }}>
-                      <div
+                    <div style={{ minWidth: 0, flex: 1, lineHeight: 1.2, paddingRight: 6 }}>                      <div
                         style={{
                           fontWeight: "bold",
                           color: "#1f3b67",
@@ -2422,12 +2423,13 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
 
                     <div
                       style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(2, 28px)",
-                        gridTemplateRows: "repeat(2, 28px)",
-                        gap: 2,
-                        flexShrink: 0,
-                      }}
+  display: "grid",
+  gridTemplateColumns: "repeat(2, 30px)",
+  gridTemplateRows: "repeat(2, 30px)",
+  gap: 4,
+  flexShrink: 0,
+  marginLeft: 8,
+}}
                     >
                       <button
                         title="Preview"
