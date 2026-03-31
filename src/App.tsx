@@ -1973,7 +1973,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   fontWeight: 700,
   cursor: isDisabled ? "not-allowed" : "pointer",
   minHeight: 24,
-  minWidth: 98,
+  minWidth: 80,
   whiteSpace: "nowrap",
   opacity: isDisabled ? 0.65 : 0.88,
   fontSize: 11,
@@ -2170,90 +2170,82 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
 <div
   ref={menuBarRef}
   style={{
-  display: "grid",
-  gridTemplateColumns: "1fr auto",
-  alignItems: "center",
-  columnGap: 18,
-  marginBottom: 12,
-  position: "sticky",
-  top: 0,
-  zIndex: 100,
-  background: "#f7f1e3",
-  padding: "12px 28px 12px 18px",
-  borderBottom: "1px solid #d8c08a",
-  boxShadow: openMenu ? "0 4px 10px rgba(0,0,0,0.06)" : "0 2px 6px rgba(0,0,0,0.04)",
-}}
+    display: "grid",
+    gridTemplateColumns: "1fr auto",
+    alignItems: "center",
+    columnGap: 16,
+    marginBottom: 12,
+    position: "sticky",
+    top: 0,
+    zIndex: 100,
+    background: "#f7f1e3",
+    padding: "12px 18px",
+    borderBottom: "1px solid #d8c08a",
+    boxShadow: openMenu ? "0 4px 10px rgba(0,0,0,0.06)" : "0 2px 6px rgba(0,0,0,0.04)",
+  }}
 >
   <div
-  style={{
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: 56,
-  }}
->
+    style={{
+      position: "relative",
+      display: "grid",
+      gridTemplateColumns: "repeat(3, max-content)",
+      justifyContent: "center",
+      columnGap: 24,
+      alignItems: "center",
+      minHeight: 56,
+    }}
+  >
+    <TopNavTab
+      label="Builder"
+      active={activeTab === "builder"}
+      onClick={() => setActiveTab("builder")}
+      buttonRef={(el) => {
+        tabRefs.current.builder = el;
+      }}
+    />
+    <TopNavTab
+      label="Library"
+      active={activeTab === "library"}
+      onClick={() => setActiveTab("library")}
+      buttonRef={(el) => {
+        tabRefs.current.library = el;
+      }}
+    />
+    <TopNavTab
+      label="Preview"
+      active={activeTab === "preview"}
+      onClick={() => setActiveTab("preview")}
+      buttonRef={(el) => {
+        tabRefs.current.preview = el;
+      }}
+    />
+
     <div
       style={{
-        position: "relative",
-        display: "flex",
-        alignItems: "center",
-        background: "transparent",
+        position: "absolute",
+        bottom: 0,
+        left: tabIndicator.left,
+        width: tabIndicator.width,
+        height: 4,
+        borderRadius: 3,
+        background: "#c69a3a",
+        transition: "left 0.22s ease, width 0.22s ease",
       }}
-    >
-      <TopNavTab
-  label="Builder"
-  active={activeTab === "builder"}
-  onClick={() => setActiveTab("builder")}
-  buttonRef={(el) => {
-    tabRefs.current.builder = el;
-  }}
-/>
-<TopNavTab
-  label="Library"
-  active={activeTab === "library"}
-  onClick={() => setActiveTab("library")}
-  buttonRef={(el) => {
-    tabRefs.current.library = el;
-  }}
-/>
-<TopNavTab
-  label="Preview"
-  active={activeTab === "preview"}
-  onClick={() => setActiveTab("preview")}
-  buttonRef={(el) => {
-    tabRefs.current.preview = el;
-  }}
-/>
-
-      <div
-  style={{
-    position: "absolute",
-    bottom: 0,
-    left: tabIndicator.left,
-    width: tabIndicator.width,
-    height: 4,
-    borderRadius: 3,
-    background: "#c69a3a",
-    transition: "left 0.22s ease, width 0.22s ease",
-  }}
-/>
-    </div>
+    />
   </div>
 
   <div
-  style={{
-    display: "flex",
-    flexDirection: "column",
-    gap: 6,
-    alignItems: "center",
-    justifySelf: "start",
-    marginLeft: -28,
-    paddingTop: 2,
-  }}
->
-  {renderMenu("library")}
-  {renderMenu("token")}
-</div>
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      gap: 6,
+      alignItems: "center",
+      justifySelf: "center",
+    }}
+  >
+    {renderMenu("library")}
+    {renderMenu("token")}
+  </div>
 </div>
 
       {selection.length > 0 && (
