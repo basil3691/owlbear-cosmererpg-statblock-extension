@@ -1893,115 +1893,132 @@ function updateTactics(value: string) {
   }
 
   function renderMenu(menu: Exclude<OpenMenu, null>) {
-    const isOpen = openMenu === menu;
+  const isOpen = openMenu === menu;
+  const isDisabled = menu === "token" && selection.length === 0;
 
-    const label = menu === "library" ? "File" : "Attach";
-    return (
-      <div style={{ position: "relative" }}>
-        <button
-          onClick={() => {
-            setOpenSubmenu(null);
-  setOpenMenu(isOpen ? null : menu);
-          }}
-          style={{
-            padding: "8px 12px",
-            borderRadius: 6,
-            border: isOpen ? "2px solid #1f3b67" : "1px solid #c69a3a",
-            background: isOpen ? "#e8dcc0" : "#fffaf0",
-            color: "#1f3b67",
-            fontWeight: 600,
-            cursor: "pointer",
-            minHeight: 38,
-            whiteSpace: "nowrap",
-          }}
-        >
-          {label} ▾
-        </button>
+  const label = menu === "library" ? "File" : "Attach";
 
-        {isOpen && (
-          <div
-            style={{
-              position: "absolute",
-              top: "calc(100% + 6px)",
-              left: 0,
-              minWidth: 190,
-              background: "#fffaf0",
-              border: "1px solid #c69a3a",
-              borderRadius: 8,
-              boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
-              padding: 6,
-              zIndex: 50,
-            }}
-          >
-            {menu === "library" && (
-  <>
-    <MenuAction onClick={startNewBuilderAdversary}>
-  New Adversary
-</MenuAction>
-
+  return (
     <div style={{ position: "relative" }}>
-      <MenuAction
-        onClick={() =>
-          setOpenSubmenu(openSubmenu === "library-import" ? null : "library-import")
-        }
+      <button
+        onClick={() => {
+          if (isDisabled) return;
+          setOpenSubmenu(null);
+          setOpenMenu(isOpen ? null : menu);
+        }}
+        style={{
+          padding: "8px 12px",
+          borderRadius: 6,
+          border: isOpen
+            ? "2px solid #1f3b67"
+            : isDisabled
+            ? "1px solid #d3c6a0"
+            : "1px solid #c69a3a",
+          background: isOpen
+            ? "#e8dcc0"
+            : isDisabled
+            ? "#f3eee0"
+            : "#fffaf0",
+          color: isDisabled ? "#a79c80" : "#1f3b67",
+          fontWeight: 600,
+          cursor: isDisabled ? "not-allowed" : "pointer",
+          minHeight: 38,
+          whiteSpace: "nowrap",
+          opacity: isDisabled ? 0.7 : 1,
+        }}
       >
-        Import ▸
-      </MenuAction>
+        {label} ▾
+      </button>
 
-      {openSubmenu === "library-import" && (
+      {isOpen && !isDisabled && (
         <div
           style={{
             position: "absolute",
-            top: 0,
-            left: "calc(100% + 6px)",
-            minWidth: 170,
+            top: "calc(100% + 6px)",
+            left: 0,
+            minWidth: 190,
             background: "#fffaf0",
             border: "1px solid #c69a3a",
             borderRadius: 8,
             boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
             padding: 6,
-            zIndex: 60,
+            zIndex: 50,
           }}
         >
-          <MenuAction onClick={() => importLibraryInputRef.current?.click()}>
-            From File
-          </MenuAction>
-          <MenuAction onClick={importFromText}>
-            Paste JSON
-          </MenuAction>
+          {menu === "library" && (
+            <>
+              <MenuAction onClick={startNewBuilderAdversary}>
+                New Adversary
+              </MenuAction>
+
+              <div style={{ position: "relative" }}>
+                <MenuAction
+                  onClick={() =>
+                    setOpenSubmenu(
+                      openSubmenu === "library-import" ? null : "library-import"
+                    )
+                  }
+                >
+                  Import ▸
+                </MenuAction>
+
+                {openSubmenu === "library-import" && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: "calc(100% + 6px)",
+                      minWidth: 170,
+                      background: "#fffaf0",
+                      border: "1px solid #c69a3a",
+                      borderRadius: 8,
+                      boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
+                      padding: 6,
+                      zIndex: 60,
+                    }}
+                  >
+                    <MenuAction onClick={() => importLibraryInputRef.current?.click()}>
+                      From File
+                    </MenuAction>
+                    <MenuAction onClick={importFromText}>
+                      Paste JSON
+                    </MenuAction>
+                  </div>
+                )}
+              </div>
+
+              <MenuAction onClick={exportLibrary}>Export Library</MenuAction>
+            </>
+          )}
+
+          {menu === "token" && (
+            <>
+              <MenuAction
+                onClick={() => {
+                  if (!currentWorkingAdversary) {
+                    setStatusMessage("No adversary selected.");
+                    return;
+                  }
+                  attachAdversaryData(currentWorkingAdversary);
+                }}
+                disabled={!currentWorkingAdversary || selection.length === 0}
+              >
+                Attach to Token
+              </MenuAction>
+
+              <MenuAction
+                onClick={detachAdversaryData}
+                disabled={selection.length === 0 || !hasLinkedMetadata}
+              >
+                Unlink Token
+              </MenuAction>
+            </>
+          )}
         </div>
       )}
     </div>
-<MenuAction onClick={exportLibrary}>Export Library</MenuAction>  </>
-)}
-
-            {menu === "token" && (
-              <>
-                <MenuAction
-                  onClick={() => {
-                    if (!currentWorkingAdversary) {
-                      setStatusMessage("No adversary selected.");
-                      return;
-                    }
-                    attachAdversaryData(currentWorkingAdversary);
-                  }}
-                  disabled={!currentWorkingAdversary || selection.length === 0}
-                >
-                  Attach to Token
-                </MenuAction>
-                <MenuAction
-                  onClick={detachAdversaryData}
-                  disabled={selection.length === 0 || !hasLinkedMetadata}
-                >
-                  Unlink Token
-                </MenuAction>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
+  );
+}
 
 
   if (!ready) return <div>Loading...</div>;
