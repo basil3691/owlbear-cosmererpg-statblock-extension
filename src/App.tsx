@@ -1155,14 +1155,16 @@ function TabButton({
     <button
       onClick={onClick}
       style={{
-        padding: "8px 12px",
-        borderRadius: 6,
-        border: active ? "2px solid #1f3b67" : "1px solid #c69a3a",
-        background: active ? "#e8dcc0" : "#fffaf0",
-        color: "#1f3b67",
-        fontWeight: active ? "bold" : 500,
-        cursor: "pointer",
-      }}
+  padding: "6px 10px",
+  borderRadius: 8,
+  border: active ? "2px solid #1f3b67" : "1px solid #c69a3a",
+  background: active ? "#e8dcc0" : "#fffaf0",
+  color: "#1f3b67",
+  fontWeight: active ? "bold" : 500,
+  cursor: "pointer",
+  minHeight: 38,
+  whiteSpace: "nowrap",
+}}
     >
       {children}
     </button>
@@ -2033,50 +2035,69 @@ function updateTactics(value: string) {
         `}
       </style>
 
-      <h2 style={{ marginTop: 0, color: "#1f3b67" }}>Cosmere Stat Blocks</h2>
+      <h2
+  style={{
+    margin: "0 0 8px 0",
+    color: "#1f3b67",
+    textAlign: "center",
+  }}
+>
+  Cosmere Stat Blocks
+</h2>
 
-      {statusMessage && (
-        <div
-          style={{
-            marginBottom: 10,
-            padding: "6px 10px",
-            border: "1px solid #c69a3a",
-            borderRadius: 6,
-            background: "#fff7df",
-            color: "#1f3b67",
-            fontSize: 13,
-          }}
-        >
-          {statusMessage}
-        </div>
-      )}
+{statusMessage && (
+  <div
+    style={{
+      marginBottom: 10,
+      padding: "6px 10px",
+      border: "1px solid #c69a3a",
+      borderRadius: 6,
+      background: "#fff7df",
+      color: "#1f3b67",
+      fontSize: 13,
+    }}
+  >
+    {statusMessage}
+  </div>
+)}
 
-      {selectedLibraryId && activeTab === "builder" && (
-        <div style={{ marginBottom: 8, fontWeight: "bold" }}>
-          Editing: {selectedLibraryEntry?.name ?? "Unknown"}
-        </div>
-      )}
+{selectedLibraryId && activeTab === "builder" && (
+  <div style={{ marginBottom: 8, fontWeight: "bold" }}>
+    Editing: {selectedLibraryEntry?.name ?? "Unknown"}
+  </div>
+)}
 
-     <div
+<div
   ref={menuBarRef}
   style={{
     display: "flex",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 10,
+    flexWrap: "nowrap",
+    overflowX: "auto",
     position: "sticky",
     top: 0,
     zIndex: 100,
     background: "#f7f1e3",
-    padding: "6px 0",
+    padding: "6px 0 8px 0",
     borderBottom: "1px solid #d8c08a",
   }}
 >
   {renderMenu("library")}
   {renderMenu("token")}
 
-  <div style={{ display: "flex", gap: 8, marginLeft: 8, flexWrap: "wrap" }}>
+  <div
+    style={{
+      display: "flex",
+      gap: 6,
+      marginLeft: 6,
+      paddingLeft: 8,
+      borderLeft: "1px solid #d8c08a",
+      flexWrap: "nowrap",
+      whiteSpace: "nowrap",
+    }}
+  >
     <TabButton active={activeTab === "preview"} onClick={() => setActiveTab("preview")}>
       Preview
     </TabButton>
@@ -2088,11 +2109,51 @@ function updateTactics(value: string) {
     </TabButton>
   </div>
 
-  <div style={{ display: "flex", gap: 8, marginLeft: "auto", flexWrap: "wrap" }}>
+  <div
+    style={{
+      display: "flex",
+      gap: 6,
+      marginLeft: "auto",
+      flexWrap: "nowrap",
+      whiteSpace: "nowrap",
+    }}
+  >
     {activeTab === "builder" && (
       <>
-        <button onClick={saveCurrentToLibrary}>Save</button>
-        <button onClick={saveAsNewToLibrary}>Save As New</button>
+        <button
+          onClick={saveCurrentToLibrary}
+          style={{
+            padding: "6px 10px",
+            borderRadius: 8,
+            border: "1px solid #c69a3a",
+            background: "#fffaf0",
+            color: "#1f3b67",
+            fontWeight: 600,
+            cursor: "pointer",
+            minHeight: 38,
+            whiteSpace: "nowrap",
+          }}
+        >
+          Save
+        </button>
+
+        <button
+          onClick={saveAsNewToLibrary}
+          style={{
+            padding: "6px 10px",
+            borderRadius: 8,
+            border: "1px solid #c69a3a",
+            background: "#fffaf0",
+            color: "#1f3b67",
+            fontWeight: 600,
+            cursor: "pointer",
+            minHeight: 38,
+            whiteSpace: "nowrap",
+          }}
+        >
+          Save As New
+        </button>
+
         <button
           onClick={() => {
             if (!currentWorkingAdversary) {
@@ -2101,6 +2162,17 @@ function updateTactics(value: string) {
             }
             exportJsonFile(currentWorkingAdversary);
             setStatusMessage("Current JSON exported.");
+          }}
+          style={{
+            padding: "6px 10px",
+            borderRadius: 8,
+            border: "1px solid #c69a3a",
+            background: "#fffaf0",
+            color: "#1f3b67",
+            fontWeight: 600,
+            cursor: "pointer",
+            minHeight: 38,
+            whiteSpace: "nowrap",
           }}
         >
           Export JSON
