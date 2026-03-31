@@ -1142,35 +1142,6 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
   );
 }
 
-function TabButton({
-  active,
-  children,
-  onClick,
-}: {
-  active: boolean;
-  children: React.ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        padding: "8px 12px",
-        borderRadius: 6,
-        border: active ? "2px solid #1f3b67" : "1px solid #c69a3a",
-        background: active ? "#e8dcc0" : "#fffaf0",
-        color: "#1f3b67",
-        fontWeight: 600,
-        cursor: "pointer",
-        minHeight: 38,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
 export default function App() {
   const [ready, setReady] = useState(false);
   const [selection, setSelection] = useState<string[]>([]);
@@ -1892,7 +1863,48 @@ function updateTactics(value: string) {
     );
   }
 
-  function renderMenu(menu: Exclude<OpenMenu, null>) {
+  function TopNavTab({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        padding: "6px 10px",
+        cursor: "pointer",
+        color: active ? "#1f3b67" : "#6b7a99",
+        fontWeight: active ? 700 : 600,
+        fontSize: 13,
+        letterSpacing: 0.5,
+        textTransform: "uppercase",
+      }}
+    >
+      <div>{label}</div>
+
+      <div
+        style={{
+          marginTop: 4,
+          height: 3,
+          width: "100%",
+          borderRadius: 2,
+          background: active ? "#c69a3a" : "transparent",
+          transition: "all 0.2s",
+        }}
+      />
+    </div>
+  );
+}
+
+function renderMenu(menu: Exclude<OpenMenu, null>) {
   const isOpen = openMenu === menu;
   const isDisabled = menu === "token" && selection.length === 0;
 
@@ -1936,7 +1948,7 @@ function updateTactics(value: string) {
             position: "absolute",
             top: "calc(100% + 6px)",
             left: 0,
-            minWidth: 190,
+            minWidth: 210,
             background: "#fffaf0",
             border: "1px solid #c69a3a",
             borderRadius: 8,
@@ -1947,6 +1959,24 @@ function updateTactics(value: string) {
         >
           {menu === "library" && (
             <>
+              <MenuAction onClick={saveCurrentToLibrary}>Save</MenuAction>
+
+              <MenuAction onClick={saveAsNewToLibrary}>Save As New</MenuAction>
+
+              <MenuAction
+                onClick={() => {
+                  if (!currentWorkingAdversary) {
+                    setStatusMessage("Nothing to export.");
+                    return;
+                  }
+                  exportJsonFile(currentWorkingAdversary);
+                  setStatusMessage("Current JSON exported.");
+                  setOpenMenu(null);
+                }}
+              >
+                Export JSON
+              </MenuAction>
+
               <MenuAction onClick={startNewBuilderAdversary}>
                 New Adversary
               </MenuAction>
@@ -2091,110 +2121,37 @@ function updateTactics(value: string) {
   style={{
     display: "flex",
     alignItems: "center",
-    gap: 6,
-    marginBottom: 10,
-    flexWrap: "nowrap",
-    overflowX: "auto",
+    justifyContent: "space-between",
+    marginBottom: 12,
     position: "sticky",
     top: 0,
     zIndex: 100,
     background: "#f7f1e3",
-    padding: "6px 0 8px 0",
+    padding: "8px 0 10px 0",
     borderBottom: "1px solid #d8c08a",
   }}
 >
-  {renderMenu("library")}
-  {renderMenu("token")}
-
-  <div
-  style={{
-    display: "flex",
-    gap: 4,
-    flexWrap: "nowrap",
-    whiteSpace: "nowrap",
-  }}
->
-    <TabButton active={activeTab === "preview"} onClick={() => setActiveTab("preview")}>
-      Preview
-    </TabButton>
-    <TabButton active={activeTab === "builder"} onClick={() => setActiveTab("builder")}>
-      Builder
-    </TabButton>
-    <TabButton active={activeTab === "library"} onClick={() => setActiveTab("library")}>
-      Library
-    </TabButton>
+  <div style={{ display: "flex", gap: 16 }}>
+    <TopNavTab
+      label="Builder"
+      active={activeTab === "builder"}
+      onClick={() => setActiveTab("builder")}
+    />
+    <TopNavTab
+      label="Library"
+      active={activeTab === "library"}
+      onClick={() => setActiveTab("library")}
+    />
+    <TopNavTab
+      label="Preview"
+      active={activeTab === "preview"}
+      onClick={() => setActiveTab("preview")}
+    />
   </div>
 
-  <div
-    style={{
-      display: "flex",
-      gap: 6,
-      marginLeft: "auto",
-      flexWrap: "nowrap",
-      whiteSpace: "nowrap",
-    }}
-  >
-    {activeTab === "builder" && (
-      <>
-        <button
-          onClick={saveCurrentToLibrary}
-          style={{
-            padding: "6px 10px",
-            borderRadius: 8,
-            border: "1px solid #c69a3a",
-            background: "#fffaf0",
-            color: "#1f3b67",
-            fontWeight: 600,
-            cursor: "pointer",
-            minHeight: 38,
-            whiteSpace: "nowrap",
-          }}
-        >
-          Save
-        </button>
-
-        <button
-          onClick={saveAsNewToLibrary}
-          style={{
-            padding: "6px 10px",
-            borderRadius: 8,
-            border: "1px solid #c69a3a",
-            background: "#fffaf0",
-            color: "#1f3b67",
-            fontWeight: 600,
-            cursor: "pointer",
-            minHeight: 38,
-            whiteSpace: "nowrap",
-          }}
-        >
-          Save As New
-        </button>
-
-        <button
-          onClick={() => {
-            if (!currentWorkingAdversary) {
-              setStatusMessage("Nothing to export.");
-              return;
-            }
-            exportJsonFile(currentWorkingAdversary);
-            setStatusMessage("Current JSON exported.");
-          }}
-          style={{
-            padding: "6px 10px",
-            borderRadius: 8,
-            border: "1px solid #c69a3a",
-            background: "#fffaf0",
-            color: "#1f3b67",
-            fontWeight: 600,
-            cursor: "pointer",
-            minHeight: 38,
-            whiteSpace: "nowrap",
-          }}
-        >
-          Export JSON
-        </button>
-      </>
-    )}
+  <div style={{ display: "flex", gap: 8 }}>
+    {renderMenu("library")}
+    {renderMenu("token")}
   </div>
 </div>
 
