@@ -1197,6 +1197,14 @@ export default function App() {
     transition: "background 0.15s ease",
   } as const;
 
+  const tabRefs = useRef<Record<ActiveTab, HTMLButtonElement | null>>({
+  preview: null,
+  builder: null,
+  library: null,
+});
+
+const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LIBRARY_STORAGE_KEY);
@@ -1884,13 +1892,16 @@ function updateTactics(value: string) {
   active,
   label,
   onClick,
+  buttonRef,
 }: {
   active: boolean;
   label: string;
   onClick: () => void;
+  buttonRef?: (el: HTMLButtonElement | null) => void;
 }) {
   return (
     <button
+      ref={buttonRef}
       onClick={onClick}
       style={{
         border: "none",
@@ -1952,17 +1963,26 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
       {isOpen && !isDisabled && (
         <div
           style={{
-            position: "absolute",
-            top: "calc(100% + 6px)",
-            left: 0,
-            minWidth: 210,
-            background: "#fffaf0",
-            border: "1px solid #c69a3a",
-            borderRadius: 8,
-            boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
-            padding: 6,
-            zIndex: 50,
-          }}
+  padding: "4px 10px",
+  borderRadius: 6,
+  border: isOpen
+    ? "1px solid #1f3b67"
+    : isDisabled
+    ? "1px solid #ddd2b0"
+    : "1px solid #d8bc76",
+  background: isOpen
+    ? "#efe3c9"
+    : isDisabled
+    ? "#f4efe2"
+    : "#faf5e8",
+  color: isDisabled ? "#b0a58a" : "#24406e",
+  fontWeight: 700,
+  cursor: isDisabled ? "not-allowed" : "pointer",
+  minHeight: 28,
+  whiteSpace: "nowrap",
+  opacity: isDisabled ? 0.65 : 0.92,
+  fontSize: 12,
+}}
         >
           {menu === "library" && (
             <>
@@ -2137,19 +2157,19 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
 <div
   ref={menuBarRef}
   style={{
-    display: "grid",
-    gridTemplateColumns: "1fr auto",
-    alignItems: "center",
-    columnGap: 16,
-    marginBottom: 12,
-    position: "sticky",
-    top: 0,
-    zIndex: 100,
-    background: "#f7f1e3",
-    padding: "8px 0 10px 0",
-    borderBottom: "1px solid #d8c08a",
-    boxShadow: openMenu ? "0 4px 10px rgba(0,0,0,0.06)" : "0 2px 6px rgba(0,0,0,0.04)",
-  }}
+  display: "grid",
+  gridTemplateColumns: "1fr auto",
+  alignItems: "start",
+  columnGap: 28,
+  marginBottom: 12,
+  position: "sticky",
+  top: 0,
+  zIndex: 100,
+  background: "#f7f1e3",
+  padding: "8px 12px 10px 12px",
+  borderBottom: "1px solid #d8c08a",
+  boxShadow: openMenu ? "0 4px 10px rgba(0,0,0,0.06)" : "0 2px 6px rgba(0,0,0,0.04)",
+}}
 >
   <div
   style={{
@@ -2166,36 +2186,40 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
       }}
     >
       <TopNavTab
-        label="Builder"
-        active={activeTab === "builder"}
-        onClick={() => setActiveTab("builder")}
-      />
-      <TopNavTab
-        label="Library"
-        active={activeTab === "library"}
-        onClick={() => setActiveTab("library")}
-      />
-      <TopNavTab
-        label="Preview"
-        active={activeTab === "preview"}
-        onClick={() => setActiveTab("preview")}
-      />
+  label="Builder"
+  active={activeTab === "builder"}
+  onClick={() => setActiveTab("builder")}
+  buttonRef={(el) => {
+    tabRefs.current.builder = el;
+  }}
+/>
+<TopNavTab
+  label="Library"
+  active={activeTab === "library"}
+  onClick={() => setActiveTab("library")}
+  buttonRef={(el) => {
+    tabRefs.current.library = el;
+  }}
+/>
+<TopNavTab
+  label="Preview"
+  active={activeTab === "preview"}
+  onClick={() => setActiveTab("preview")}
+  buttonRef={(el) => {
+    tabRefs.current.preview = el;
+  }}
+/>
 
       <div
   style={{
     position: "absolute",
     bottom: 0,
+    left: tabIndicator.left,
+    width: tabIndicator.width,
     height: 4,
-    width: 82,
     borderRadius: 3,
     background: "#c69a3a",
-    transition: "transform 0.22s ease",
-    transform:
-      activeTab === "builder"
-        ? "translateX(20px)"
-        : activeTab === "library"
-        ? "translateX(134px)"
-        : "translateX(248px)",
+    transition: "left 0.22s ease, width 0.22s ease",
   }}
 />
     </div>
@@ -2205,13 +2229,15 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   style={{
     display: "flex",
     flexDirection: "column",
-    gap: 4,
-    alignItems: "flex-end",
+    gap: 8,
+    alignItems: "flex-start",
+    paddingRight: 6,
+    paddingTop: 4,
   }}
 >
-    {renderMenu("library")}
-    {renderMenu("token")}
-  </div>
+  {renderMenu("library")}
+  {renderMenu("token")}
+</div>
 </div>
 
       {selection.length > 0 && (
@@ -2321,8 +2347,8 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "28px 1fr",
-                gap: 10,
+                gridTemplateColumns: "18px minmax(0, 1fr)",
+                gap: 8,
                 alignItems: "start",
               }}
             >
@@ -2332,7 +2358,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
                   flexDirection: "column",
                   gap: 2,
                   alignItems: "center",
-                  paddingTop: 4,
+                  paddingTop: 6,
                 }}
               >
                 {availableLetters.map((letter) => (
@@ -2345,10 +2371,10 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
                       color: activeLetter === letter ? "#fff" : "#1f3b67",
                       cursor: "pointer",
                       padding: "2px 0",
-                      width: 24,
-                      height: 20,
+                      width: 16,
+                      height: 18,
                       borderRadius: 4,
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: activeLetter === letter ? 700 : 500,
                       lineHeight: 1,
                     }}
@@ -2361,13 +2387,14 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
               <div
                 ref={libraryListRef}
                 style={{
-                  display: "grid",
-                  gap: 10,
-                  maxHeight: 520,
-                  overflowY: "auto",
-                  paddingRight: 12,
-                  boxSizing: "border-box",
-                }}
+  display: "grid",
+  gap: 10,
+  maxHeight: 520,
+  overflowY: "auto",
+  paddingRight: 8,
+  minWidth: 0,
+  boxSizing: "border-box",
+}}
               >
                 {sortedFilteredLibrary.map((entry) => (
                   <div
@@ -2390,6 +2417,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   gap: 10,
   cursor: "pointer",
   minHeight: 52,
+  minWidth: 0,
   boxSizing: "border-box",
 }}
                     onClick={() => {
@@ -2397,7 +2425,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
                       setActiveTab("preview");
                     }}
                   >
-                    <div style={{ minWidth: 0, flex: 1, lineHeight: 1.2, paddingRight: 6 }}>                      <div
+                    <div style={{ minWidth: 0, flex: 1, lineHeight: 1.2, paddingRight: 4 }}>                      <div
                         style={{
                           fontWeight: "bold",
                           color: "#1f3b67",
@@ -2424,11 +2452,11 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
                     <div
                       style={{
   display: "grid",
-  gridTemplateColumns: "repeat(2, 30px)",
-  gridTemplateRows: "repeat(2, 30px)",
-  gap: 4,
+  gridTemplateColumns: "repeat(2, 26px)",
+  gridTemplateRows: "repeat(2, 26px)",
+  gap: 2,
   flexShrink: 0,
-  marginLeft: 8,
+  marginLeft: 6,
 }}
                     >
                       <button
