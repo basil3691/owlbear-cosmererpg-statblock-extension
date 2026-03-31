@@ -1890,36 +1890,23 @@ function updateTactics(value: string) {
   onClick: () => void;
 }) {
   return (
-    <div
+    <button
       onClick={onClick}
       style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "6px 10px",
+        border: "none",
+        background: "transparent",
+        padding: "6px 18px 14px 18px",
         cursor: "pointer",
         color: active ? "#1f3b67" : "#6b7a99",
         fontWeight: active ? 800 : 600,
         fontSize: 13,
         letterSpacing: 0.8,
         textTransform: "uppercase",
-        transition: "color 0.18s ease, transform 0.18s ease",
-        transform: active ? "translateY(0)" : "translateY(1px)",
+        transition: "color 0.18s ease",
       }}
     >
-      <div>{label}</div>
-
-      <div
-        style={{
-          marginTop: 6,
-          height: 4,
-          width: active ? 72 : 0,
-          borderRadius: 3,
-          background: "#c69a3a",
-          transition: "width 0.2s ease",
-        }}
-      />
-    </div>
+      {label}
+    </button>
   );
 }
 
@@ -1930,7 +1917,27 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   const label = menu === "library" ? "File" : "Attach";
 
   return (
-    <div style={{ position: "relative" }}>
+    <div style={{
+  padding: "5px 10px",
+  borderRadius: 6,
+  border: isOpen
+    ? "2px solid #1f3b67"
+    : isDisabled
+    ? "1px solid #d3c6a0"
+    : "1px solid #d3b066",
+  background: isOpen
+    ? "#ece1c8"
+    : isDisabled
+    ? "#f3eee0"
+    : "#fbf6ea",
+  color: isDisabled ? "#a79c80" : "#1f3b67",
+  fontWeight: 700,
+  cursor: isDisabled ? "not-allowed" : "pointer",
+  minHeight: 30,
+  whiteSpace: "nowrap",
+  opacity: isDisabled ? 0.7 : 0.95,
+  fontSize: 13,
+}}>
       <button
         onClick={() => {
           if (isDisabled) return;
@@ -2150,9 +2157,10 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
 <div
   ref={menuBarRef}
   style={{
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
+    display: "grid",
+    gridTemplateColumns: "1fr auto",
+    alignItems: "center",
+    columnGap: 16,
     marginBottom: 12,
     position: "sticky",
     top: 0,
@@ -2163,22 +2171,54 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
     boxShadow: openMenu ? "0 4px 10px rgba(0,0,0,0.06)" : "0 2px 6px rgba(0,0,0,0.04)",
   }}
 >
-  <div style={{ display: "flex", gap: 16, alignItems: "flex-end" }}>
-    <TopNavTab
-      label="Builder"
-      active={activeTab === "builder"}
-      onClick={() => setActiveTab("builder")}
-    />
-    <TopNavTab
-      label="Library"
-      active={activeTab === "library"}
-      onClick={() => setActiveTab("library")}
-    />
-    <TopNavTab
-      label="Preview"
-      active={activeTab === "preview"}
-      onClick={() => setActiveTab("preview")}
-    />
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "center",
+    }}
+  >
+    <div
+      style={{
+        position: "relative",
+        display: "flex",
+        alignItems: "flex-end",
+        background: "transparent",
+      }}
+    >
+      <TopNavTab
+        label="Builder"
+        active={activeTab === "builder"}
+        onClick={() => setActiveTab("builder")}
+      />
+      <TopNavTab
+        label="Library"
+        active={activeTab === "library"}
+        onClick={() => setActiveTab("library")}
+      />
+      <TopNavTab
+        label="Preview"
+        active={activeTab === "preview"}
+        onClick={() => setActiveTab("preview")}
+      />
+
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          height: 4,
+          width: 92,
+          borderRadius: 3,
+          background: "#c69a3a",
+          transition: "transform 0.22s ease",
+          transform:
+            activeTab === "builder"
+              ? "translateX(18px)"
+              : activeTab === "library"
+              ? "translateX(126px)"
+              : "translateX(234px)",
+        }}
+      />
+    </div>
   </div>
 
   <div
@@ -2187,7 +2227,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
       flexDirection: "column",
       gap: 6,
       alignItems: "stretch",
-      minWidth: 92,
+      minWidth: 84,
     }}
   >
     {renderMenu("library")}
@@ -2204,28 +2244,56 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
       {autoMatchEntry && selection.length > 0 && !hasLinkedMetadata && (
         <div
           style={{
-            marginBottom: 12,
-            padding: 10,
-            border: "1px solid #c69a3a",
-            borderRadius: 8,
-            background: "#fff7df",
-          }}
+  marginBottom: 12,
+  padding: 14,
+  border: "1px solid #c69a3a",
+  borderRadius: 12,
+  background: "#fff7df",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+}}
         >
           <div style={{ marginBottom: 6 }}>
             Match found for token <strong>{selectedTokenName}</strong>:{" "}
             <strong>{autoMatchEntry.name}</strong>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              onClick={() => {
-                loadLibraryEntry(autoMatchEntry);
-                setActiveTab("preview");
-              }}
-            >
-              Preview Match
-            </button>
-            <button onClick={() => attachAdversaryData(autoMatchEntry.data)}>Attach Match</button>
-          </div>
+          <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+  <button
+    onClick={() => {
+      loadLibraryEntry(autoMatchEntry);
+      setActiveTab("preview");
+    }}
+    style={{
+      padding: "8px 14px",
+      borderRadius: 8,
+      border: "1px solid #c69a3a",
+      background: "#fffaf0",
+      color: "#1f3b67",
+      fontWeight: 700,
+      cursor: "pointer",
+      fontSize: 14,
+      boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+    }}
+  >
+    Preview Match
+  </button>
+
+  <button
+    onClick={() => attachAdversaryData(autoMatchEntry.data)}
+    style={{
+      padding: "8px 14px",
+      borderRadius: 8,
+      border: "1px solid #1f3b67",
+      background: "#1f3b67",
+      color: "#fffaf0",
+      fontWeight: 700,
+      cursor: "pointer",
+      fontSize: 14,
+      boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+    }}
+  >
+    Attach Match
+  </button>
+</div>
         </div>
       )}
 
