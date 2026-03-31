@@ -1973,6 +1973,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   fontWeight: 700,
   cursor: isDisabled ? "not-allowed" : "pointer",
   minHeight: 24,
+  minWidth: 98,
   whiteSpace: "nowrap",
   opacity: isDisabled ? 0.65 : 0.88,
   fontSize: 11,
@@ -2248,7 +2249,6 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
     justifySelf: "start",
     marginLeft: -28,
     paddingTop: 2,
-    minWidth: 98,
   }}
 >
   {renderMenu("library")}
