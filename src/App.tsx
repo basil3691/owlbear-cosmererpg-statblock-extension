@@ -1177,8 +1177,6 @@ export default function App() {
 
   const [builderAdversary, setBuilderAdversary] = useState<Adversary>(EMPTY_ADVERSARY);
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
-  const [showNewChooser, setShowNewChooser] = useState(false);
-
   const [library, setLibrary] = useState<LibraryEntry[]>([]);
   const [libraryLoaded, setLibraryLoaded] = useState(false);
   const [selectedLibraryId, setSelectedLibraryId] = useState<string | null>(null);
@@ -1378,35 +1376,6 @@ export default function App() {
     return first && /[A-Z]/.test(first) ? first : "#";
   }
 
-  function restoreLibraryBackup() {
-  try {
-    const raw = localStorage.getItem(LIBRARY_BACKUP_KEY);
-    if (!raw) {
-      setStatusMessage("No backup found.");
-      return;
-    }
-
-    const parsed = JSON.parse(raw) as {
-      savedAt?: string;
-      count?: number;
-      library?: LibraryEntry[];
-    };
-
-    if (!Array.isArray(parsed.library)) {
-      setStatusMessage("Backup is invalid.");
-      return;
-    }
-
-    setLibrary(parsed.library);
-    setStatusMessage(
-      `Backup restored${parsed.savedAt ? ` from ${new Date(parsed.savedAt).toLocaleString()}` : ""}.`
-    );
-  } catch (error) {
-    console.error(error);
-    setStatusMessage("Could not restore backup.");
-  }
-}
-
   async function attachAdversaryData(parsed: Adversary) {
     if (selection.length === 0) return;
 
@@ -1579,7 +1548,6 @@ export default function App() {
     setSelectedLibraryId(null);
     setBuilderAdversary(EMPTY_ADVERSARY);
     setActiveTab("builder");
-    setShowNewChooser(false);
     setOpenMenu(null);
   }
 
@@ -1783,32 +1751,6 @@ function updateTactics(value: string) {
     setOpenMenu(null);
   }
 
-  function exportLibraryBackup() {
-  const backup = {
-    savedAt: new Date().toISOString(),
-    count: library.length,
-    library,
-  };
-
-  const dataStr = JSON.stringify(backup, null, 2);
-  const blob = new Blob([dataStr], { type: "application/json" });
-
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-
-  const stamp = new Date()
-    .toISOString()
-    .replace(/[:.]/g, "-");
-
-  a.download = `statblock-library-backup-${stamp}.json`;
-  a.click();
-
-  URL.revokeObjectURL(url);
-  setStatusMessage("Backup downloaded.");
-  setOpenMenu(null);
-}
-
   function runLibraryImport(parsed: any) {
   try {
     let entries: LibraryEntry[] = [];
@@ -1989,9 +1931,9 @@ function updateTactics(value: string) {
           >
             {menu === "library" && (
   <>
-    <MenuAction onClick={() => setShowNewChooser((prev) => !prev)}>
-      New Adversary
-    </MenuAction>
+    <MenuAction onClick={startNewBuilderAdversary}>
+  New Adversary
+</MenuAction>
 
     <div style={{ position: "relative" }}>
       <MenuAction
@@ -2026,10 +1968,7 @@ function updateTactics(value: string) {
         </div>
       )}
     </div>
-      <MenuAction onClick={restoreLibraryBackup}>Restore Backup</MenuAction>
-      <MenuAction onClick={exportLibraryBackup}>Export Backup</MenuAction>
-    <MenuAction onClick={exportLibrary}>Export Library</MenuAction>
-  </>
+<MenuAction onClick={exportLibrary}>Export Library</MenuAction>  </>
 )}
 
             {menu === "token" && (
@@ -2168,36 +2107,8 @@ function updateTactics(value: string) {
         </button>
       </>
     )}
-
-    {activeTab === "library" && (
-      <>
-        <button onClick={() => setShowNewChooser((prev) => !prev)}>New</button>
-        <button onClick={() => importLibraryInputRef.current?.click()}>Import File</button>
-        <button onClick={importFromText}>Paste JSON</button>
-        <button onClick={exportLibrary}>Export Library</button>
-      </>
-    )}
   </div>
 </div>
-
-      {showNewChooser && (
-        <div
-          style={{
-            border: "1px solid #c69a3a",
-            borderRadius: 8,
-            padding: 10,
-            background: "#fffaf0",
-            marginBottom: 12,
-          }}
-        >
-          <div style={{ fontWeight: "bold", marginBottom: 8, color: "#1f3b67" }}>
-            Create New Adversary
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-  <button onClick={startNewBuilderAdversary}>Create New Adversary</button>
-</div>
-        </div>
-      )}
 
       {selection.length > 0 && (
         <p style={{ marginBottom: 8, color: "#5b5670" }}>
