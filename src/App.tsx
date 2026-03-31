@@ -1917,7 +1917,14 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   const label = menu === "library" ? "File" : "Attach";
 
   return (
-    <div style={{
+  <div style={{ position: "relative" }}>
+      <button
+        onClick={() => {
+          if (isDisabled) return;
+          setOpenSubmenu(null);
+          setOpenMenu(isOpen ? null : menu);
+        }}
+        style={{
   padding: "4px 9px",
   borderRadius: 6,
   border: isOpen
@@ -1937,34 +1944,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   whiteSpace: "nowrap",
   opacity: isDisabled ? 0.65 : 0.9,
   fontSize: 12,
-}}>
-      <button
-        onClick={() => {
-          if (isDisabled) return;
-          setOpenSubmenu(null);
-          setOpenMenu(isOpen ? null : menu);
-        }}
-        style={{
-          padding: "6px 10px",
-          borderRadius: 6,
-          border: isOpen
-            ? "2px solid #1f3b67"
-            : isDisabled
-            ? "1px solid #d3c6a0"
-            : "1px solid #c69a3a",
-          background: isOpen
-            ? "#e8dcc0"
-            : isDisabled
-            ? "#f3eee0"
-            : "#fffaf0",
-          color: isDisabled ? "#a79c80" : "#1f3b67",
-          fontWeight: 600,
-          cursor: isDisabled ? "not-allowed" : "pointer",
-          minHeight: 32,
-          whiteSpace: "nowrap",
-          opacity: isDisabled ? 0.7 : 1,
-          fontSize: 14,
-        }}
+}}
       >
         {label} ▾
       </button>
@@ -2175,7 +2155,6 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   style={{
     display: "flex",
     justifyContent: "center",
-    paddingLeft: 36,
   }}
 >
     <div
@@ -2207,16 +2186,16 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
     position: "absolute",
     bottom: 0,
     height: 4,
-    width: activeTab === "builder" ? 94 : activeTab === "library" ? 96 : 92,
+    width: 88,
     borderRadius: 3,
     background: "#c69a3a",
-    transition: "transform 0.22s ease, width 0.22s ease",
+    transition: "transform 0.22s ease",
     transform:
       activeTab === "builder"
-        ? "translateX(18px)"
+        ? "translateX(20px)"
         : activeTab === "library"
-        ? "translateX(144px)"
-        : "translateX(274px)",
+        ? "translateX(134px)"
+        : "translateX(248px)",
   }}
 />
     </div>
