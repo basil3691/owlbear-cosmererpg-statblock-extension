@@ -2244,10 +2244,11 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
     display: "flex",
     flexDirection: "column",
     gap: 6,
-    alignItems: "flex-start",
+    alignItems: "center",
     justifySelf: "start",
-    marginLeft: -18,
+    marginLeft: -28,
     paddingTop: 2,
+    minWidth: 98,
   }}
 >
   {renderMenu("library")}
