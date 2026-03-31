@@ -1182,6 +1182,7 @@ export default function App() {
   const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const importLibraryInputRef = useRef<HTMLInputElement | null>(null);
   const menuBarRef = useRef<HTMLDivElement | null>(null);
+  const tabRowRef = useRef<HTMLDivElement | null>(null);
 
   const iconButtonStyle = {
     width: 28,
@@ -1203,28 +1204,13 @@ export default function App() {
   library: null,
 });
 
+const tabLabelRefs = useRef<Record<ActiveTab, HTMLSpanElement | null>>({
+  preview: null,
+  builder: null,
+  library: null,
+});
+
 const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
-
-useEffect(() => {
-  const updateIndicator = () => {
-    const activeEl = tabRefs.current[activeTab];
-    if (!activeEl) return;
-
-    setTabIndicator({
-      left: activeEl.offsetLeft,
-      width: activeEl.offsetWidth,
-    });
-  };
-
-  updateIndicator();
-  const id = requestAnimationFrame(updateIndicator);
-
-  window.addEventListener("resize", updateIndicator);
-  return () => {
-    cancelAnimationFrame(id);
-    window.removeEventListener("resize", updateIndicator);
-  };
-}, [activeTab]);
 
   useEffect(() => {
     try {
@@ -1239,6 +1225,31 @@ useEffect(() => {
       setLibraryLoaded(true);
     }
   }, []);
+
+  useEffect(() => {
+  const updateIndicator = () => {
+    const activeLabel = tabLabelRefs.current[activeTab];
+    const container = tabRowRef.current;
+    if (!activeLabel || !container) return;
+
+    const labelRect = activeLabel.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+
+    setTabIndicator({
+      left: labelRect.left - containerRect.left,
+      width: labelRect.width,
+    });
+  };
+
+  updateIndicator();
+  const id = requestAnimationFrame(updateIndicator);
+
+  window.addEventListener("resize", updateIndicator);
+  return () => {
+    cancelAnimationFrame(id);
+    window.removeEventListener("resize", updateIndicator);
+  };
+}, [activeTab]);
 
   useEffect(() => {
   if (!libraryLoaded) return;
@@ -1892,10 +1903,10 @@ function updateTactics(value: string) {
           background: disabled ? "#f7f2e7" : "transparent",
           color: disabled ? "#9a9487" : "#1f3b67",
           border: "none",
-          padding: "8px 10px",
+          padding: "6px 8px",
           borderRadius: 6,
           cursor: disabled ? "default" : "pointer",
-          fontSize: 14,
+          fontSize: 12,
         }}
         onMouseEnter={(e) => {
           if (!disabled) e.currentTarget.style.background = "#f3e6c7";
@@ -1909,16 +1920,50 @@ function updateTactics(value: string) {
     );
   }
 
-  function TopNavTab({
+  function getDropdownStyle(alignRight = false): React.CSSProperties {
+  return {
+    position: "absolute",
+    top: "calc(100% + 6px)",
+    ...(alignRight ? { right: 0 } : { left: 0 }),
+    minWidth: 150,
+    background: "#fffaf0",
+    border: "1px solid #c69a3a",
+    borderRadius: 8,
+    boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
+    padding: 4,
+    zIndex: 50,
+  };
+}
+
+  function getFlyoutStyle(openLeft = false): React.CSSProperties {
+  return {
+    position: "absolute",
+    top: 0,
+    ...(openLeft
+      ? { right: "calc(100% + 6px)" }
+      : { left: "calc(100% + 6px)" }),
+    minWidth: 130,
+    background: "#fffaf0",
+    border: "1px solid #c69a3a",
+    borderRadius: 8,
+    boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
+    padding: 4,
+    zIndex: 60,
+  };
+}
+
+ function TopNavTab({
   active,
   label,
   onClick,
   buttonRef,
+  labelRef,
 }: {
   active: boolean;
   label: string;
   onClick: () => void;
   buttonRef?: (el: HTMLButtonElement | null) => void;
+  labelRef?: (el: HTMLSpanElement | null) => void;
 }) {
   return (
     <button
@@ -1927,7 +1972,7 @@ function updateTactics(value: string) {
       style={{
         border: "none",
         background: "transparent",
-        padding: "6px 18px 14px 18px",
+        padding: "6px 10px 10px 10px",
         cursor: "pointer",
         color: active ? "#1f3b67" : "#6b7a99",
         fontWeight: active ? 800 : 600,
@@ -1937,7 +1982,7 @@ function updateTactics(value: string) {
         transition: "color 0.18s ease",
       }}
     >
-      {label}
+      <span ref={labelRef}>{label}</span>
     </button>
   );
 }
@@ -1947,6 +1992,8 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   const isDisabled = menu === "token" && selection.length === 0;
 
   const label = menu === "library" ? "File" : "Attach";
+  const shouldOpenLeft = menu === "library";
+  const shouldAlignDropdownRight = menu === "library" || menu === "token";
 
   return (
   <div style={{ position: "relative" }}>
@@ -1960,23 +2007,21 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   padding: "3px 8px",
   borderRadius: 6,
   border: isOpen
-    ? "1px solid #1f3b67"
-    : isDisabled
-    ? "1px solid #ddd2b0"
-    : "1px solid #d8bc76",
-  background: isOpen
-    ? "#efe3c9"
-    : isDisabled
-    ? "#f4efe2"
-    : "#faf5e8",
+  ? "1px solid #c69a3a"
+  : "1px solid transparent",
+
+background: isOpen
+  ? "#efe3c9"
+  : "transparent",
   color: isDisabled ? "#b0a58a" : "#24406e",
   fontWeight: 700,
   cursor: isDisabled ? "not-allowed" : "pointer",
-  minHeight: 24,
+  minHeight: 22,
   width: "100%",
+  minWidth: 100,
   whiteSpace: "nowrap",
-  opacity: isDisabled ? 0.65 : 0.88,
-  fontSize: 11,
+  opacity: isDisabled ? 0.65 : 0.85,
+  fontSize: 12,
   boxSizing: "border-box",
 }}
       >
@@ -1984,107 +2029,106 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
       </button>
 
       {isOpen && !isDisabled && (
-        <div
-          style={{
-  position: "absolute",
-  top: "calc(100% + 6px)",
-  left: 0,
-  minWidth: 210,
-  background: "#fffaf0",
-  border: "1px solid #c69a3a",
-  borderRadius: 8,
-  boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
-  padding: 6,
-  zIndex: 50,
-}}
-        >
+  <div style={getDropdownStyle(shouldAlignDropdownRight)}>
           {menu === "library" && (
-            <>
-              <MenuAction onClick={saveCurrentToLibrary}>Save</MenuAction>
+  <>
+    <MenuAction onClick={saveCurrentToLibrary}>Save</MenuAction>
 
-              <MenuAction onClick={saveAsNewToLibrary}>Save As New</MenuAction>
+    <MenuAction onClick={saveAsNewToLibrary}>Save As New</MenuAction>
 
-              <MenuAction
-                onClick={() => {
-                  if (!currentWorkingAdversary) {
-                    setStatusMessage("Nothing to export.");
-                    return;
-                  }
-                  exportJsonFile(currentWorkingAdversary);
-                  setStatusMessage("Current JSON exported.");
-                  setOpenMenu(null);
-                }}
-              >
-                Export JSON
-              </MenuAction>
+    <MenuAction onClick={startNewBuilderAdversary}>
+      New Adversary
+    </MenuAction>
 
-              <MenuAction onClick={startNewBuilderAdversary}>
-                New Adversary
-              </MenuAction>
+    <div style={{ position: "relative" }}>
+      <MenuAction
+        onClick={() =>
+          setOpenSubmenu(
+            openSubmenu === "library-import" ? null : "library-import"
+          )
+        }
+      >
+        Import ▸
+      </MenuAction>
 
-              <div style={{ position: "relative" }}>
-                <MenuAction
-                  onClick={() =>
-                    setOpenSubmenu(
-                      openSubmenu === "library-import" ? null : "library-import"
-                    )
-                  }
-                >
-                  Import ▸
-                </MenuAction>
+      {openSubmenu === "library-import" && (
+        <div style={getFlyoutStyle(shouldOpenLeft)}>
+          <MenuAction onClick={() => importLibraryInputRef.current?.click()}>
+            From File
+          </MenuAction>
+          <MenuAction onClick={importFromText}>
+            Paste JSON
+          </MenuAction>
+        </div>
+      )}
+    </div>
 
-                {openSubmenu === "library-import" && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: "calc(100% + 6px)",
-                      minWidth: 170,
-                      background: "#fffaf0",
-                      border: "1px solid #c69a3a",
-                      borderRadius: 8,
-                      boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
-                      padding: 6,
-                      zIndex: 60,
-                    }}
-                  >
-                    <MenuAction onClick={() => importLibraryInputRef.current?.click()}>
-                      From File
-                    </MenuAction>
-                    <MenuAction onClick={importFromText}>
-                      Paste JSON
-                    </MenuAction>
-                  </div>
-                )}
-              </div>
+    <div style={{ position: "relative" }}>
+      <MenuAction
+        onClick={() =>
+          setOpenSubmenu(
+            openSubmenu === "library-export" ? null : "library-export"
+          )
+        }
+      >
+        Export ▸
+      </MenuAction>
 
-              <MenuAction onClick={exportLibrary}>Export Library</MenuAction>
-            </>
-          )}
+      {openSubmenu === "library-export" && (
+        <div style={getFlyoutStyle(shouldOpenLeft)}>
+          <MenuAction
+            onClick={() => {
+              if (!currentWorkingAdversary) {
+                setStatusMessage("Nothing to export.");
+                return;
+              }
+              exportJsonFile(currentWorkingAdversary);
+              setStatusMessage("Current JSON exported.");
+              setOpenMenu(null);
+              setOpenSubmenu(null);
+            }}
+          >
+            JSON
+          </MenuAction>
 
-          {menu === "token" && (
-            <>
-              <MenuAction
-                onClick={() => {
-                  if (!currentWorkingAdversary) {
-                    setStatusMessage("No adversary selected.");
-                    return;
-                  }
-                  attachAdversaryData(currentWorkingAdversary);
-                }}
-                disabled={!currentWorkingAdversary || selection.length === 0}
-              >
-                Attach to Token
-              </MenuAction>
+          <MenuAction
+            onClick={() => {
+              exportLibrary();
+              setOpenSubmenu(null);
+            }}
+          >
+            Library
+          </MenuAction>
+        </div>
+      )}
+    </div>
+  </>
+)}
 
-              <MenuAction
-                onClick={detachAdversaryData}
-                disabled={selection.length === 0 || !hasLinkedMetadata}
-              >
-                Unlink Token
-              </MenuAction>
-            </>
-          )}
+{menu === "token" && (
+  <>
+    <MenuAction
+      onClick={() => {
+        if (!currentWorkingAdversary) {
+          setStatusMessage("No adversary selected.");
+          return;
+        }
+        attachAdversaryData(currentWorkingAdversary);
+      }}
+      disabled={!currentWorkingAdversary || selection.length === 0}
+    >
+      Attach to Token
+    </MenuAction>
+
+    <MenuAction
+      onClick={detachAdversaryData}
+      disabled={selection.length === 0 || !hasLinkedMetadata}
+    >
+      Unlink Token
+    </MenuAction>
+  </>
+)}
+
         </div>
       )}
     </div>
@@ -2101,6 +2145,9 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
         fontFamily: "sans-serif",
         background: "linear-gradient(180deg, #f7f1e3 0%, #efe4ca 100%)",
         minHeight: "100%",
+        boxSizing: "border-box",
+        width: "100%",
+        maxWidth: "100%",
       }}
     >
       <input
@@ -2171,71 +2218,94 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
 <div
   ref={menuBarRef}
   style={{
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) 110px",
-    alignItems: "center",
-    columnGap: 3,
-    marginBottom: 12,
     position: "sticky",
     top: 0,
     zIndex: 100,
     background: "#f7f1e3",
     padding: "12px 16px",
+    marginBottom: 12,
     borderBottom: "1px solid #d8c08a",
     boxShadow: openMenu ? "0 4px 10px rgba(0,0,0,0.06)" : "0 2px 6px rgba(0,0,0,0.04)",
+    overflow: "visible",
+    width: "100%",
+    maxWidth: "100%",
     boxSizing: "border-box",
-    overflow: "hidden",
   }}
 >
   <div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto 90px",
+    alignItems: "center",
+    minHeight: 64,
+    columnGap: 8,
+    width: "100%",
+    maxWidth: "100%",
+    boxSizing: "border-box",
+  }}
+>
+  <div />
+
+  <div
+    ref={tabRowRef}
     style={{
-      position: "relative",
-      display: "grid",
-      gridTemplateColumns: "repeat(3, minmax(0, max-content))",
-      justifyContent: "center",
-      columnGap: 12,
+      display: "flex",
       alignItems: "center",
-      minHeight: 56,
-      minWidth: 0,
+      justifyContent: "center",
+      gap: 8,
+      minWidth: 100,
+      flexWrap: "nowrap",
+      position: "relative",
     }}
   >
     <TopNavTab
-      label="Builder"
-      active={activeTab === "builder"}
-      onClick={() => setActiveTab("builder")}
-      buttonRef={(el) => {
-        tabRefs.current.builder = el;
-      }}
-    />
-    <TopNavTab
-      label="Library"
-      active={activeTab === "library"}
-      onClick={() => setActiveTab("library")}
-      buttonRef={(el) => {
-        tabRefs.current.library = el;
-      }}
-    />
-    <TopNavTab
-      label="Preview"
-      active={activeTab === "preview"}
-      onClick={() => setActiveTab("preview")}
-      buttonRef={(el) => {
-        tabRefs.current.preview = el;
-      }}
-    />
+  label="Builder"
+  active={activeTab === "builder"}
+  onClick={() => setActiveTab("builder")}
+  buttonRef={(el) => {
+    tabRefs.current.builder = el;
+  }}
+  labelRef={(el) => {
+    tabLabelRefs.current.builder = el;
+  }}
+/>
 
-    <div
-      style={{
-        position: "absolute",
-        bottom: 0,
-        left: tabIndicator.left,
-        width: tabIndicator.width,
-        height: 4,
-        borderRadius: 3,
-        background: "#c69a3a",
-        transition: "left 0.22s ease, width 0.22s ease",
-      }}
-    />
+<TopNavTab
+  label="Library"
+  active={activeTab === "library"}
+  onClick={() => setActiveTab("library")}
+  buttonRef={(el) => {
+    tabRefs.current.library = el;
+  }}
+  labelRef={(el) => {
+    tabLabelRefs.current.library = el;
+  }}
+/>
+
+<TopNavTab
+  label="Preview"
+  active={activeTab === "preview"}
+  onClick={() => setActiveTab("preview")}
+  buttonRef={(el) => {
+    tabRefs.current.preview = el;
+  }}
+  labelRef={(el) => {
+    tabLabelRefs.current.preview = el;
+  }}
+/>
+<div
+  style={{
+    position: "absolute",
+    bottom: 0,
+    left: tabIndicator.left,
+    width: tabIndicator.width,
+    height: 4,
+    borderRadius: 3,
+    background: "#c69a3a",
+    transition: "left 0.22s ease, width 0.22s ease",
+    pointerEvents: "none",
+  }}
+/>
   </div>
 
   <div
@@ -2244,13 +2314,14 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
       flexDirection: "column",
       gap: 6,
       alignItems: "center",
-      justifySelf: "center",
-      width: "110px",
+      justifySelf: "end",
+      width: 82,
     }}
   >
     {renderMenu("library")}
     {renderMenu("token")}
   </div>
+</div>
 </div>
 
       {selection.length > 0 && (
@@ -2405,7 +2476,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   maxHeight: 520,
   overflowY: "auto",
   paddingRight: 8,
-  minWidth: 0,
+  minWidth: 130,
   boxSizing: "border-box",
 }}
               >
@@ -2430,7 +2501,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   gap: 10,
   cursor: "pointer",
   minHeight: 52,
-  minWidth: 0,
+  minWidth: 130,
   boxSizing: "border-box",
 }}
                     onClick={() => {
@@ -2438,7 +2509,7 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
                       setActiveTab("preview");
                     }}
                   >
-                    <div style={{ minWidth: 0, flex: 1, lineHeight: 1.2, paddingRight: 4 }}>                      <div
+                    <div style={{ minWidth: 100, flex: 1, lineHeight: 1.2, paddingRight: 4 }}>                      <div
                         style={{
                           fontWeight: "bold",
                           color: "#1f3b67",
