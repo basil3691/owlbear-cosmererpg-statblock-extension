@@ -1592,10 +1592,7 @@ const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
       return;
     }
 
-    const existingId =
-      selectedLibraryId ??
-      library.find((x) => normalizeName(x.name) === normalizeName(current.name ?? ""))?.id ??
-      makeId();
+    const existingId = selectedLibraryId ?? makeId();
 
     const entry: LibraryEntry = {
       id: existingId,
@@ -1931,20 +1928,20 @@ function updateTactics(value: string) {
       const next = [...prev];
 
       for (const entry of entries) {
-        const existingIndex = next.findIndex(
-          (e) => normalizeName(e.name) === normalizeName(entry.name)
-        );
+        const existingIndex = entry.id
+  ? next.findIndex((e) => e.id === entry.id)
+  : -1;
 
-        if (existingIndex >= 0) {
-          next[existingIndex] = {
-            ...entry,
-            id: next[existingIndex].id,
-          };
-          updated++;
-        } else {
-          next.push(entry);
-          added++;
-        }
+if (existingIndex >= 0) {
+  next[existingIndex] = entry;
+  updated++;
+} else {
+  next.push({
+    ...entry,
+    id: entry.id ?? makeId(),
+  });
+  added++;
+}
       }
 
       next.sort((a, b) => a.name.localeCompare(b.name));
