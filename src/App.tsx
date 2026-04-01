@@ -1253,6 +1253,7 @@ export default function App() {
   const [library, setLibrary] = useState<LibraryEntry[]>([]);
   const [libraryLoaded, setLibraryLoaded] = useState(false);
   const [selectedLibraryId, setSelectedLibraryId] = useState<string | null>(null);
+  const [editingLibraryId, setEditingLibraryId] = useState<string | null>(null);
   const [librarySearch, setLibrarySearch] = useState("");
   const [activeLetter, setActiveLetter] = useState<string | null>(null);
 
@@ -1425,9 +1426,8 @@ setTokenMatchedLibraryId(matchedEntry?.id ?? null);
 
 setActiveTab("library");
     });
-  }, [selection]);
+  }, [selection, library]);
 
-  
 
   useEffect(() => {
   if (!statusMessage) return;
@@ -1588,7 +1588,7 @@ const selectedLibraryEntry = useMemo(
     return;
   }
 
-  const existingId = selectedLibraryId ?? makeId();
+  const existingId = editingLibraryId ?? makeId();
 
   const entry: LibraryEntry = {
     id: existingId,
@@ -1601,16 +1601,17 @@ const selectedLibraryEntry = useMemo(
   };
 
   setLibrary((prev) => {
-    const exists = prev.find((x) => x.id === existingId);
+    const exists = prev.some((x) => x.id === existingId);
     if (exists) {
       return prev.map((x) => (x.id === existingId ? entry : x));
     }
     return [...prev, entry];
   });
 
+  setEditingLibraryId(entry.id);
   setSelectedLibraryId(entry.id);
   setActiveTab("library");
-  setStatusMessage("Library entry saved.");
+  setStatusMessage(editingLibraryId ? "Library entry updated." : "Library entry saved.");
   setOpenMenu(null);
 }
 
@@ -1633,6 +1634,7 @@ const selectedLibraryEntry = useMemo(
   };
 
   setLibrary((prev) => [...prev, entry]);
+  setEditingLibraryId(entry.id);
   setSelectedLibraryId(entry.id);
   setActiveTab("library");
   setStatusMessage("Saved as new library entry.");
@@ -1640,16 +1642,18 @@ const selectedLibraryEntry = useMemo(
 }
 
   function loadLibraryEntry(entry: LibraryEntry) {
-    setSelectedLibraryId(entry.id);
-    setBuilderAdversary(entry.data);
-  }
+  setSelectedLibraryId(entry.id);
+  setEditingLibraryId(entry.id);
+  setBuilderAdversary(entry.data);
+}
 
   function startNewBuilderAdversary() {
-    setSelectedLibraryId(null);
-    setBuilderAdversary(EMPTY_ADVERSARY);
-    setActiveTab("builder");
-    setOpenMenu(null);
-  }
+  setSelectedLibraryId(null);
+  setEditingLibraryId(null);
+  setBuilderAdversary(EMPTY_ADVERSARY);
+  setActiveTab("builder");
+  setOpenMenu(null);
+}
 
   function updateBuilderSource(value: "Official" | "Homebrew") {
   setBuilderAdversary((prev) => ({
@@ -2695,8 +2699,13 @@ background: isOpen
                           if (!confirmed) return;
 
                           setLibrary((prev) => prev.filter((x) => x.id !== entry.id));
+
                           if (selectedLibraryId === entry.id) setSelectedLibraryId(null);
+                          if (editingLibraryId === entry.id) setEditingLibraryId(null);
+
                           setStatusMessage("Library entry deleted.");
+
+                          if (editingLibraryId === entry.id) setEditingLibraryId(null);
                         }}
                         style={iconButtonStyle}
                         onMouseEnter={(e) => (e.currentTarget.style.background = "#f3e6c7")}
