@@ -1267,6 +1267,8 @@ export default function App() {
   const menuBarRef = useRef<HTMLDivElement | null>(null);
   const tabRowRef = useRef<HTMLDivElement | null>(null);
 
+  const [tokenMatchedLibraryId, setTokenMatchedLibraryId] = useState<string | null>(null);
+
   const iconButtonStyle = {
     width: 28,
     height: 28,
@@ -1380,11 +1382,12 @@ const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
 
   useEffect(() => {
     if (selection.length === 0) {
-      setAttachedAdversary(null);
-      setSelectedTokenName("");
-      setHasLinkedMetadata(false);
-      return;
-    }
+  setAttachedAdversary(null);
+  setTokenMatchedLibraryId(null);
+  setSelectedTokenName("");
+  setHasLinkedMetadata(false);
+  return;
+}
 
     OBR.scene.items.getItems(selection).then((items) => {
       const first = items[0] as any;
@@ -1407,38 +1410,41 @@ const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
       setHasLinkedMetadata(Boolean(loaded));
 
       if (loaded) {
-        setAttachedAdversary(loaded);
-        setSelectedLibraryId(null);
-        setActiveTab("preview");
-        return;
-      }
+  setAttachedAdversary(loaded);
+  setTokenMatchedLibraryId(null);
+  setActiveTab("preview");
+  return;
+}
 
-      const normalizedTokenName = normalizeName(tokenName);
-      const matchedEntry =
-        library.find((entry) => normalizeName(entry.name) === normalizedTokenName) ?? null;
+const normalizedTokenName = normalizeName(tokenName);
+const matchedEntry =
+  library.find((entry) => normalizeName(entry.name) === normalizedTokenName) ?? null;
 
-      setAttachedAdversary(null);
+setAttachedAdversary(null);
+setTokenMatchedLibraryId(matchedEntry?.id ?? null);
 
-      setSelectedLibraryId((prev) => prev ?? matchedEntry?.id ?? null);
-
-      setActiveTab("library");
+setActiveTab("library");
     });
   }, [selection]);
 
+  
+
   useEffect(() => {
-    if (!statusMessage) return;
+  if (!statusMessage) return;
 
-    const timer = window.setTimeout(() => {
-      setStatusMessage(null);
-    }, 3000);
+  const timer = window.setTimeout(() => {
+    setStatusMessage(null);
+  }, 3000);
 
-    return () => window.clearTimeout(timer);
-  }, [statusMessage]);
+  return () => window.clearTimeout(timer);
+}, [statusMessage]);
 
-  const selectedLibraryEntry = useMemo(
-    () => library.find((entry) => entry.id === selectedLibraryId) ?? null,
-    [library, selectedLibraryId]
-  );
+const effectiveLibraryId = selectedLibraryId ?? tokenMatchedLibraryId;
+
+const selectedLibraryEntry = useMemo(
+  () => library.find((entry) => entry.id === effectiveLibraryId) ?? null,
+  [library, effectiveLibraryId]
+);
 
   const sortedFilteredLibrary = useMemo(() => {
     return [...library]
