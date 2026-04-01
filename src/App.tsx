@@ -1419,15 +1419,11 @@ const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
 
       setAttachedAdversary(null);
 
-      if (matchedEntry) {
-        setSelectedLibraryId(matchedEntry.id);
-      } else {
-        setSelectedLibraryId(null);
-      }
+      setSelectedLibraryId((prev) => prev ?? matchedEntry?.id ?? null);
 
       setActiveTab("library");
     });
-  }, [selection, library]);
+  }, [selection]);
 
   useEffect(() => {
     if (!statusMessage) return;
