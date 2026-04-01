@@ -1650,7 +1650,6 @@ const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
   }
 
   function updateBuilderSource(value: "Official" | "Homebrew") {
-  setSelectedLibraryId(null);
   setBuilderAdversary((prev) => ({
     ...prev,
     source: value,
@@ -1658,7 +1657,6 @@ const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
 }
 
 function updateBuilderSetting(value: string) {
-  setSelectedLibraryId(null);
   setBuilderAdversary((prev) => ({
     ...prev,
     setting: value,
@@ -1666,7 +1664,6 @@ function updateBuilderSetting(value: string) {
 }
 
   function setPhysical<K extends keyof NonNullable<Adversary["physical"]>>(key: K, value: number) {
-    setSelectedLibraryId(null);
     setBuilderAdversary((prev) => ({
       ...prev,
       physical: {
@@ -1679,7 +1676,6 @@ function updateBuilderSetting(value: string) {
   }
 
   function setCognitive<K extends keyof NonNullable<Adversary["cognitive"]>>(key: K, value: number) {
-    setSelectedLibraryId(null);
     setBuilderAdversary((prev) => ({
       ...prev,
       cognitive: {
@@ -1692,7 +1688,6 @@ function updateBuilderSetting(value: string) {
   }
 
   function setSpiritual<K extends keyof NonNullable<Adversary["spiritual"]>>(key: K, value: number) {
-    setSelectedLibraryId(null);
     setBuilderAdversary((prev) => ({
       ...prev,
       spiritual: {
@@ -1708,7 +1703,6 @@ function updateBuilderSetting(value: string) {
   field: "intro" | "opportunity" | "complication",
   value: string
 ) {
-  setSelectedLibraryId(null);
   setBuilderAdversary((prev) => ({
     ...prev,
     opportunitiesAndComplications: {
@@ -1721,7 +1715,6 @@ function updateBuilderSetting(value: string) {
 }
 
 function updateTactics(value: string) {
-  setSelectedLibraryId(null);
   setBuilderAdversary((prev) => ({
     ...prev,
     tactics: value,
@@ -1729,7 +1722,6 @@ function updateTactics(value: string) {
 }
 
   function updateFeature(index: number, field: "name" | "text", value: string) {
-    setSelectedLibraryId(null);
     setBuilderAdversary((prev) => {
       const features = [...(prev.features ?? [])];
       features[index] = { ...features[index], [field]: value };
@@ -1738,7 +1730,6 @@ function updateTactics(value: string) {
   }
 
   function addFeature() {
-    setSelectedLibraryId(null);
     setBuilderAdversary((prev) => ({
       ...prev,
       features: [...(prev.features ?? []), { name: "", text: "" }],
@@ -1746,7 +1737,6 @@ function updateTactics(value: string) {
   }
 
   function removeFeature(index: number) {
-    setSelectedLibraryId(null);
     setBuilderAdversary((prev) => ({
       ...prev,
       features: (prev.features ?? []).filter((_, i) => i !== index),
@@ -1770,7 +1760,6 @@ function updateTactics(value: string) {
     | "notes",
   value: string
 ) {
-  setSelectedLibraryId(null);
   setBuilderAdversary((prev) => {
     const actions = [...(prev.actions ?? [])];
     const current = actions[index] ?? {
@@ -1819,7 +1808,6 @@ function updateTactics(value: string) {
 }
 
   function addAction() {
-    setSelectedLibraryId(null);
     setBuilderAdversary((prev) => ({
       ...prev,
       actions: [
@@ -1843,7 +1831,6 @@ function updateTactics(value: string) {
   }
 
   function removeAction(index: number) {
-    setSelectedLibraryId(null);
     setBuilderAdversary((prev) => ({
       ...prev,
       actions: (prev.actions ?? []).filter((_, i) => i !== index),
