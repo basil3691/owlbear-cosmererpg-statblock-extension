@@ -1579,75 +1579,63 @@ const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
   }, [sortedFilteredLibrary]);
 
   function saveCurrentToLibrary() {
-  let current: Adversary | null = null;
+  const current = builderAdversary;
 
-  if (selectedLibraryEntry) {
-    current = selectedLibraryEntry.data;
-  } else {
-    current = builderAdversary;
+  if (!current.name || !current.name.trim()) {
+    setStatusMessage("Please give the adversary a name first.");
+    return;
   }
 
-    if (!current.name || !current.name.trim()) {
-      setStatusMessage("Please give the adversary a name first.");
-      return;
+  const existingId = selectedLibraryId ?? makeId();
+
+  const entry: LibraryEntry = {
+    id: existingId,
+    name: current.name.trim(),
+    summary: makeSummary(current),
+    data: {
+      ...current,
+      actions: normalizeActions(current.actions),
+    },
+  };
+
+  setLibrary((prev) => {
+    const exists = prev.find((x) => x.id === existingId);
+    if (exists) {
+      return prev.map((x) => (x.id === existingId ? entry : x));
     }
+    return [...prev, entry];
+  });
 
-    const existingId = selectedLibraryId ?? makeId();
-
-    const entry: LibraryEntry = {
-      id: existingId,
-      name: current.name.trim(),
-      summary: makeSummary(current),
-      data: {
-  ...current,
-  actions: normalizeActions(current.actions),
-},
-    };
-
-    setLibrary((prev) => {
-      const exists = prev.find((x) => x.id === existingId);
-      if (exists) {
-        return prev.map((x) => (x.id === existingId ? entry : x));
-      }
-      return [...prev, entry];
-    });
-
-    setSelectedLibraryId(entry.id);
-    setActiveTab("library");
-    setStatusMessage("Library entry saved.");
-    setOpenMenu(null);
-  }
+  setSelectedLibraryId(entry.id);
+  setActiveTab("library");
+  setStatusMessage("Library entry saved.");
+  setOpenMenu(null);
+}
 
   function saveAsNewToLibrary() {
-  let current: Adversary | null = null;
+  const current = builderAdversary;
 
-  if (selectedLibraryEntry) {
-    current = selectedLibraryEntry.data;
-  } else {
-    current = builderAdversary;
+  if (!current.name || !current.name.trim()) {
+    setStatusMessage("Please give the adversary a name first.");
+    return;
   }
 
-    if (!current.name || !current.name.trim()) {
-      setStatusMessage("Please give the adversary a name first.");
-      return;
-    }
+  const entry: LibraryEntry = {
+    id: makeId(),
+    name: current.name.trim(),
+    summary: makeSummary(current),
+    data: {
+      ...current,
+      actions: normalizeActions(current.actions),
+    },
+  };
 
-    const entry: LibraryEntry = {
-      id: makeId(),
-      name: current.name.trim(),
-      summary: makeSummary(current),
-      data: {
-  ...current,
-  actions: normalizeActions(current.actions),
-},
-    };
-
-    setLibrary((prev) => [...prev, entry]);
-    setSelectedLibraryId(entry.id);
-    setActiveTab("library");
-    setStatusMessage("Saved as new library entry.");
-    setOpenMenu(null);
-  }
+  setLibrary((prev) => [...prev, entry]);
+  setSelectedLibraryId(entry.id);
+  setActiveTab("library");
+  setStatusMessage("Saved as new library entry.");
+  setOpenMenu(null);
+}
 
   function loadLibraryEntry(entry: LibraryEntry) {
     setSelectedLibraryId(entry.id);
