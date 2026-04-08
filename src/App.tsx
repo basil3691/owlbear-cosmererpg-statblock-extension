@@ -1148,18 +1148,15 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
     </>
   )}
 
-  {(action.text &&
-  !action.attackBonus &&
-  !action.reach &&
-  !action.range &&
-  !action.target &&
-  action.text !== action.notes &&
-  action.text !== action.graze &&
-  action.text !== action.hit) && (
-    <>
-      <InlineRulesText text={action.text} />
-      {" "}
-    </>
+  {action.text &&
+ action.text.trim() &&
+ action.text !== action.notes &&
+ action.text !== action.graze &&
+ action.text !== action.hit && (
+  <>
+    <InlineRulesText text={action.text} />
+    {" "}
+  </>
 )}
 
   {action.notes && action.notes !== action.text && (
