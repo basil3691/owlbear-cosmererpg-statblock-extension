@@ -351,17 +351,17 @@ function ActionCostIcon({
     >
       <path
         d="
-          M6.2 5.2
+          M6.4 4.8
           L3.2 8.5
-          L6.2 11.8
+          L6.4 12.2
           M3.6 8.5
           H10.8
-          C12.8 8.5, 13.6 9.4, 13.6 10.9
-          C13.6 12.2, 12.6 13.0, 11.3 13.0
+          C12.6 8.5, 13.8 9.6, 13.8 11.2
+          C13.8 12.6, 12.6 13.6, 11.2 13.6
         "
         fill="none"
         stroke={color}
-        strokeWidth="2.8"
+        strokeWidth="3"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
