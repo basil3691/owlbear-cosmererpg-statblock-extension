@@ -83,7 +83,7 @@ type LibraryEntry = {
 
 type ParsedAction = {
   name: string;
-  text: string;
+  text?: string;
   cost?: ActionCost;
   focusCost?: string;
   investitureCost?: string;
@@ -169,41 +169,38 @@ function normalizeActions(actions: unknown): ParsedAction[] {
         const a = action as Record<string, unknown>;
 
         const name = typeof a.name === "string" ? a.name : "";
-        const text = typeof a.text === "string" ? a.text : name;
-
-        const parsed = parseActionText(text || name);
+        const text = typeof a.text === "string" ? a.text : "";
+        const parsed = text.trim() ? parseActionText(text) : null;
 
         return {
-          ...parsed,
-          name: name || parsed.name,
-          text: text || parsed.text,
-          cost:
-            a.cost === "free" ||
-            a.cost === "reaction" ||
-            a.cost === 1 ||
-            a.cost === 2 ||
-            a.cost === 3
-              ? (a.cost as ActionCost)
-              : undefined,
-          focusCost: typeof a.focusCost === "string" ? a.focusCost : parsed.focusCost,
-          investitureCost: typeof a.investitureCost === "string" ? a.investitureCost : parsed.investitureCost,
-          actionType:
-            a.actionType === "attack" ||
-            a.actionType === "ability" ||
-            a.actionType === "reaction" ||
-            a.actionType === "free" ||
-            a.actionType === "other"
-              ? (a.actionType as ParsedAction["actionType"])
-              : parsed.actionType,
-          attackBonus:
-            typeof a.attackBonus === "string" ? a.attackBonus : parsed.attackBonus,
-          range: typeof a.range === "string" ? a.range : parsed.range,
-          reach: typeof a.reach === "string" ? a.reach : parsed.reach,
-          target: typeof a.target === "string" ? a.target : parsed.target,
-          graze: typeof a.graze === "string" ? a.graze : parsed.graze,
-          hit: typeof a.hit === "string" ? a.hit : parsed.hit,
-          notes: typeof a.notes === "string" ? a.notes : parsed.notes,
-        };
+  name,
+  text,
+  cost:
+    a.cost === "free" ||
+    a.cost === "reaction" ||
+    a.cost === 1 ||
+    a.cost === 2 ||
+    a.cost === 3
+      ? (a.cost as ActionCost)
+      : undefined,
+  focusCost: typeof a.focusCost === "string" ? a.focusCost : undefined,
+  investitureCost: typeof a.investitureCost === "string" ? a.investitureCost : undefined,
+  actionType:
+    a.actionType === "attack" ||
+    a.actionType === "ability" ||
+    a.actionType === "reaction" ||
+    a.actionType === "free" ||
+    a.actionType === "other"
+      ? (a.actionType as ParsedAction["actionType"])
+      : parsed?.actionType,
+  attackBonus: typeof a.attackBonus === "string" ? a.attackBonus : parsed?.attackBonus,
+  range: typeof a.range === "string" ? a.range : parsed?.range,
+  reach: typeof a.reach === "string" ? a.reach : parsed?.reach,
+  target: typeof a.target === "string" ? a.target : parsed?.target,
+  graze: typeof a.graze === "string" ? a.graze : parsed?.graze,
+  hit: typeof a.hit === "string" ? a.hit : parsed?.hit,
+  notes: typeof a.notes === "string" ? a.notes : "",
+};
       }
 
       return null;
