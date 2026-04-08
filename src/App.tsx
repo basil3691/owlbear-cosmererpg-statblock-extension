@@ -341,41 +341,32 @@ function ActionCostIcon({
   }
 
   if (cost === "reaction") {
-    return (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 18 18"
-        style={commonStyle}
-        aria-hidden="true"
-      >
-        <line
-          x1="14"
-          y1="9"
-          x2="6"
-          y2="9"
-          stroke={color}
-          strokeWidth="2.6"
-          strokeLinecap="round"
-        />
-        <polyline
-          points="9,5 5,9 9,13"
-          fill="none"
-          stroke={color}
-          strokeWidth="2.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M14 9 C15.4 9, 15.9 7.6, 15 6.2"
-          fill="none"
-          stroke={color}
-          strokeWidth="2.2"
-          strokeLinecap="round"
-        />
-      </svg>
-    );
-  }
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 18 18"
+      style={commonStyle}
+      aria-hidden="true"
+    >
+      <path
+        d="M14.2 4.6
+           C12.6 3.6, 10.7 3.8, 9.3 5.0
+           C8.0 6.2, 7.8 7.5, 7.8 9
+           H13.7
+           M7.8 9
+           L10.7 6.4
+           M7.8 9
+           L10.7 11.6"
+        fill="none"
+        stroke={color}
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
   const count = cost === 2 ? 2 : cost === 3 ? 3 : 1;
   const step = 11;
@@ -1406,6 +1397,7 @@ const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
 
       if (loaded) {
   setAttachedAdversary(loaded);
+  setSelectedLibraryId(null);
   setTokenMatchedLibraryId(null);
   setActiveTab("preview");
   return;
@@ -1478,9 +1470,8 @@ const selectedLibraryEntry = useMemo(
   return attachedAdversary ?? builderAdversary;
 }, [activeTab, builderAdversary, selectedLibraryEntry, attachedAdversary]);
 
-  const previewAdversary =
-  selectedLibraryEntry?.data ?? attachedAdversary ?? currentWorkingAdversary;
-  function getEntryLetter(name: string) {
+    const previewAdversary =
+    attachedAdversary ?? selectedLibraryEntry?.data ?? currentWorkingAdversary;  function getEntryLetter(name: string) {
     const first = name.trim()?.[0]?.toUpperCase();
     return first && /[A-Z]/.test(first) ? first : "#";
   }
