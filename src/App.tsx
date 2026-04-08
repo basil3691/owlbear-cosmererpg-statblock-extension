@@ -349,33 +349,31 @@ function ActionCostIcon({
       style={commonStyle}
       aria-hidden="true"
     >
+      {/* Left arrowhead */}
       <path
-        d="M6.2 5.2
-           L2.8 8.5
-           L6.2 11.8"
+        d="M6 5 L2.5 8.5 L6 12"
         fill="none"
         stroke={color}
-        strokeWidth="2.4"
+        strokeWidth="2.6"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+
+      {/* Main horizontal line */}
       <path
-        d="M3.2 8.5
-           H10.4
-           C12.2 8.5, 13.3 9.2, 13.3 10.8
-           C13.3 12.2, 12.3 13.1, 11.0 13.1"
+        d="M3 8.5 H11.5"
         fill="none"
         stroke={color}
-        strokeWidth="2.4"
+        strokeWidth="2.6"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
+
+      {/* Tight return hook (sharp, not curved blob) */}
       <path
-        d="M11.0 13.1
-           L12.7 11.6"
+        d="M11.5 8.5 V12.5 H9.5"
         fill="none"
         stroke={color}
-        strokeWidth="2.4"
+        strokeWidth="2.6"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
