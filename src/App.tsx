@@ -350,32 +350,25 @@ function ActionCostIcon({
       aria-hidden="true"
     >
       <path
-        d="M10 2h1v1h-1z
-           M8 3h3v1H8z
-           M7 4h4v1H7z
-           M5 5h6v1H5z
-           M3 6h8v1H3z
-           M2 7h16v1H2z
-           M0 8h20v1H0z
-           M0 9h22v1H0z
-           M1 10h22v1H1z
-           M3 11h8v1H3z
-           M17 11h6v1h-6z
-           M4 12h7v1H4z
-           M19 12h5v1h-5z
-           M6 13h5v1H6z
-           M20 13h4v1h-4z
-           M8 14h3v1H8z
-           M20 14h4v1h-4z
-           M9 15h2v1H9z
-           M19 15h5v1h-5z
-           M18 16h6v1h-6z
-           M4 17h19v1H4z
-           M4 18h18v1H4z
-           M4 19h17v1H4z
-           M4 20h16v1H4z"
+        d="
+          M11 4
+          L7 4
+          L3 8
+          L7 12
+          L11 12
+          L11 10
+          L16 10
+          C18.2 10, 20 11.6, 20 13.8
+          C20 16, 18.2 17.6, 16 17.6
+          L12 17.6
+          L12 15.6
+          L16 15.6
+          C17.2 15.6, 18 14.8, 18 13.8
+          C18 12.8, 17.2 12, 16 12
+          L11 12
+          Z
+        "
         fill={color}
-        transform="translate(0,1)"
       />
     </svg>
   );
