@@ -350,17 +350,17 @@ function ActionCostIcon({
       aria-hidden="true"
     >
       <path
-        d="M14.2 4.6
-           C12.6 3.6, 10.7 3.8, 9.3 5.0
-           C8.0 6.2, 7.8 7.5, 7.8 9
-           H13.7
-           M7.8 9
-           L10.7 6.4
-           M7.8 9
-           L10.7 11.6"
+        d="M14.5 4.5
+           C12.9 3.2, 10.8 3.3, 9.4 4.8
+           C8.2 6.0, 8.0 7.4, 8.0 9
+           H14.2
+           M8.0 9
+           L11.0 6.2
+           M8.0 9
+           L11.0 11.8"
         fill="none"
         stroke={color}
-        strokeWidth="3"
+        strokeWidth="2.8"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
