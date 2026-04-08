@@ -345,25 +345,37 @@ function ActionCostIcon({
     <svg
       width="18"
       height="18"
-      viewBox="0 0 18 18"
+      viewBox="0 0 24 24"
       style={commonStyle}
       aria-hidden="true"
     >
       <path
-        d="
-          M6.4 4.8
-          L3.2 8.5
-          L6.4 12.2
-          M3.6 8.5
-          H10.8
-          C12.6 8.5, 13.8 9.6, 13.8 11.2
-          C13.8 12.6, 12.6 13.6, 11.2 13.6
-        "
-        fill="none"
-        stroke={color}
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M10 2h1v1h-1z
+           M8 3h3v1H8z
+           M7 4h4v1H7z
+           M5 5h6v1H5z
+           M3 6h8v1H3z
+           M2 7h16v1H2z
+           M0 8h20v1H0z
+           M0 9h22v1H0z
+           M1 10h22v1H1z
+           M3 11h8v1H3z
+           M17 11h6v1h-6z
+           M4 12h7v1H4z
+           M19 12h5v1h-5z
+           M6 13h5v1H6z
+           M20 13h4v1h-4z
+           M8 14h3v1H8z
+           M20 14h4v1h-4z
+           M9 15h2v1H9z
+           M19 15h5v1h-5z
+           M18 16h6v1h-6z
+           M4 17h19v1H4z
+           M4 18h18v1H4z
+           M4 19h17v1H4z
+           M4 20h16v1H4z"
+        fill={color}
+        transform="translate(0,1)"
       />
     </svg>
   );
