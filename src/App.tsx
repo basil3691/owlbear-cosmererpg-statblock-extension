@@ -2926,7 +2926,6 @@ background: isOpen
             <SectionSummary title="DETAILS" />
             <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
               <div>
-  <div>Deflect</div>
   <BuilderTextInput
     value={
       typeof builderAdversary.deflect === "string"
@@ -2935,7 +2934,7 @@ background: isOpen
         ? String(builderAdversary.deflect)
         : ""
     }
-    placeholder="e.g. 1 (leather)"
+    placeholder="Deflect e.g. 1 (leather)"
     onChange={(value) => {
       setSelectedLibraryId(null);
       setBuilderAdversary((prev) => ({ ...prev, deflect: value }));
