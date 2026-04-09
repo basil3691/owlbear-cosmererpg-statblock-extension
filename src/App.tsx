@@ -650,24 +650,26 @@ function BuilderChoiceButton({
   active,
   label,
   onClick,
+  compact = false,
 }: {
   active: boolean;
   label: string;
   onClick: () => void;
+  compact?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       style={{
-        padding: "7px 12px",
-        borderRadius: 8,
+        padding: compact ? "3px 8px" : "7px 12px",
+        borderRadius: compact ? 6 : 8,
         border: active ? "2px solid #c69a3a" : "1px solid #d8c08a",
         background: active ? "#efe3c9" : "#fffaf0",
         color: "#1f3b67",
         fontWeight: active ? 700 : 600,
         cursor: "pointer",
-        fontSize: 13,
+        fontSize: compact ? 11 : 13,
         transition: "all 0.15s ease",
       }}
     >
