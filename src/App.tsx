@@ -250,7 +250,6 @@ function splitLines(text: string): string[] {
   return text
     .split("\n")
     .map((x) => x.trim())
-    .filter(Boolean);
 }
 
 function joinLines(items?: string[]): string {
