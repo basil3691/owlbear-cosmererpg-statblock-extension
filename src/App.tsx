@@ -329,13 +329,22 @@ function ActionCostIcon({
         style={commonStyle}
         aria-hidden="true"
       >
-        <polygon
-          points="3,2 15,9 3,16"
-          fill="none"
-          stroke={color}
-          strokeWidth="2.2"
-          strokeLinejoin="round"
-        />
+        <path
+  d="
+    M 3 3.5
+    Q 3 2, 5.4 2.8
+    L 13 8.5
+    Q 13 9, 13 9.5
+    L 5.4 15.2
+    Q 3 16, 3 14.5
+    Z
+  "
+  fill="none"
+  stroke={color}
+  strokeWidth="2.2"
+  strokeLinejoin="round"
+  strokeLinecap="round"
+/>
       </svg>
     );
   }
@@ -345,29 +354,34 @@ function ActionCostIcon({
     <svg
       width="18"
       height="18"
-      viewBox="0 0 24 24"
+      viewBox="0 0 64 64"
       style={commonStyle}
       aria-hidden="true"
     >
+      {/* tail / return stroke */}
       <path
         d="
-          M 8.8 5.2
-          L 4.6 9
-          L 8.8 12.8
-          L 8.8 10.9
-          L 14.8 10.9
-          C 17.1 10.9, 18.9 12.7, 18.9 14.9
-          C 18.9 17.1, 17.1 18.8, 14.8 18.8
-          L 8.1 18.8
-          L 8.1 16.5
-          L 14.6 16.5
-          C 15.7 16.5, 16.6 15.8, 16.6 14.9
-          C 16.6 14, 15.7 13.2, 14.6 13.2
-          L 8.8 13.2
-          L 8.8 12.8
-          L 6.7 12.8
-          L 2.8 9
-          L 6.7 5.2
+          M 22 24
+          C 39 24, 53 27, 53 38
+          C 53 49, 40 53, 14 53
+        "
+        fill="none"
+        stroke={color}
+        strokeWidth="9"
+        strokeLinecap="butt"
+        strokeLinejoin="round"
+      />
+
+      {/* arrow head */}
+      <path
+      transform="translate(22 24) scale(1.9) translate(-15 -24)"
+        d="
+          M 22 17
+          Q 22 15.2, 20.6 16.1
+          L 8.4 23.3
+          Q 6.9 24.2, 8.4 25.1
+          L 20.6 32.3
+          Q 22 33.2, 22 31.4
           Z
         "
         fill={color}
@@ -377,7 +391,7 @@ function ActionCostIcon({
 }
 
   const count = cost === 2 ? 2 : cost === 3 ? 3 : 1;
-  const step = 11;
+  const step = 8;
   const width = 14 + (count - 1) * step;
 
   return (
@@ -391,11 +405,18 @@ function ActionCostIcon({
       {Array.from({ length: count }).map((_, i) => {
         const offset = i * step;
         return (
-          <polygon
-            key={i}
-            points={`${1 + offset},2 ${13 + offset},9 ${1 + offset},16`}
-            fill={color}
-          />
+          <path
+  d={`
+    M ${1 + offset} 3.5
+    Q ${1 + offset} 2, ${3.4 + offset} 2.8
+    L ${11 + offset} 8.5
+    Q ${11 + offset} 9, ${11 + offset} 9.5
+    L ${3.4 + offset} 15.2
+    Q ${1 + offset} 16, ${1 + offset} 14.5
+    Z
+  `}
+  fill={color}
+/>
         );
       })}
     </svg>
