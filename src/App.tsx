@@ -2833,14 +2833,16 @@ background: isOpen
   ))}
 </BuilderChoiceRow>
 
+<div style={{ width: "100%" }}>
 <BuilderTextInput
       value={builderAdversary.species}
       onChange={(v) =>
         setBuilderAdversary((prev) => ({ ...prev, species: v }))
       }
       placeholder="Species (e.g., Humanoid)"
-      
+      width="100%"
     />
+    </div>
 
     </div>
   </details>
