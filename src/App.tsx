@@ -2819,6 +2819,29 @@ background: isOpen
           setBuilderAdversary((prev) => ({ ...prev, type: value }));
         }}
       />
+      
+      <BuilderChoiceRow label="Size">
+  {["Tiny", "Small", "Medium", "Large", "Huge"].map((s) => (
+    <BuilderChoiceButton
+      key={s}
+      label={s}
+      active={builderAdversary.size === s}
+      onClick={() =>
+        setBuilderAdversary((prev) => ({ ...prev, size: s }))
+      }
+    />
+  ))}
+</BuilderChoiceRow>
+
+<BuilderTextInput
+      value={builderAdversary.species}
+      onChange={(v) =>
+        setBuilderAdversary((prev) => ({ ...prev, species: v }))
+      }
+      placeholder="Species (e.g., Humanoid)"
+      width={160}
+    />
+
     </div>
   </details>
 </BuilderCard>
