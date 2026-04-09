@@ -249,7 +249,6 @@ function makeId() {
 function splitLines(text: string): string[] {
   return text
     .split("\n")
-    .map((x) => x.trim())
 }
 
 function joinLines(items?: string[]): string {
