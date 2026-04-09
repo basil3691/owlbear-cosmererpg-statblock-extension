@@ -661,7 +661,8 @@ function BuilderChoiceButton({
       type="button"
       onClick={onClick}
       style={{
-        padding: compact ? "3px 8px" : "7px 12px",
+        padding: compact ? "2px 8px" : "7px 12px",
+        minHeight: compact ? 30 : 0,
         borderRadius: compact ? 6 : 8,
         border: active ? "2px solid #c69a3a" : "1px solid #d8c08a",
         background: active ? "#efe3c9" : "#fffaf0",
@@ -669,6 +670,7 @@ function BuilderChoiceButton({
         fontWeight: active ? 700 : 600,
         cursor: "pointer",
         fontSize: compact ? 11 : 13,
+        whiteSpace: "nowrap",
         transition: "all 0.15s ease",
       }}
     >
