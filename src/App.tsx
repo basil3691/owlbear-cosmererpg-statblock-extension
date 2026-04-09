@@ -1850,7 +1850,7 @@ function updateTactics(value: string) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "statblock-library.json";
+    a.download = "adversary library owlbear.json";
     a.click();
 
     URL.revokeObjectURL(url);
