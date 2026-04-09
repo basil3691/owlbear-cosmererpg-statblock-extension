@@ -2839,7 +2839,7 @@ background: isOpen
         setBuilderAdversary((prev) => ({ ...prev, species: v }))
       }
       placeholder="Species (e.g., Humanoid)"
-      width={160}
+      
     />
 
     </div>
