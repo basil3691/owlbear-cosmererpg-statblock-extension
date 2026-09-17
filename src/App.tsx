@@ -9,6 +9,9 @@ type ActionCost = "free" | "reaction" | 1 | 2 | 3;
 type ActiveTab = "preview" | "builder" | "library";
 type OpenMenu = "library" | "token" | null;
 
+// Canonical shape of a stat block. Nearly everything is optional because
+// data can arrive from hand-written JSON, older saved entries, or the
+// builder UI mid-edit — none of which are guaranteed to be complete.
 type Adversary = {
   name?: string;
   tier?: string;
@@ -81,6 +84,9 @@ type LibraryEntry = {
   data: Adversary;
 };
 
+// Structured action data used for rendering. Populated either directly
+// (builder-created entries) or by parseActionText() below when an action
+// comes in as a single freeform string (older/imported entries).
 type ParsedAction = {
   name: string;
   text?: string;
@@ -97,6 +103,11 @@ type ParsedAction = {
   notes?: string;
 };
 
+// Best-effort parser for the old "one long string" action format, e.g.
+// "Sword Strike — Attack +6, reach 5 ft., one target. Hit: 2d6 damage."
+// Splits on the first " — " or ": " to get a name, then regexes the rest
+// for attack bonus / range / reach / target / graze / hit. This is fragile —
+// it assumes the source text roughly follows that pattern.
 function parseActionText(raw: string): ParsedAction {
   const text = raw.trim();
 
@@ -125,6 +136,8 @@ function parseActionText(raw: string): ParsedAction {
   const attackBonus = rest.match(/Attack\s*\+(\d+)/i)?.[1];
   const range = rest.match(/range\s+([0-9/]+\s*ft\.?|[0-9/]+)/i)?.[1];
   const reach = rest.match(/reach\s+([0-9]+\s*ft\.?|[0-9]+)/i)?.[1];
+  // Only matches a target phrase immediately after a reach/range clause,
+  // e.g. "reach 5 ft., one target" — won't catch targets phrased differently.
   const targetMatch = rest.match(
   /(?:reach\s+[0-9]+\s*ft\.?|range\s+[0-9/]+\s*ft\.?)(?:,\s*)([^.]+?target[s]?)/i
 );
@@ -156,6 +169,10 @@ const target = targetMatch?.[1]?.trim();
   };
 }
 
+// Coerces whatever shape "actions" arrives in (raw strings, partial
+// objects from hand-edited JSON, or already-well-formed ParsedAction
+// objects) into a consistent ParsedAction[]. Falls back to
+// parseActionText() to fill in any field the object didn't already have.
 function normalizeActions(actions: unknown): ParsedAction[] {
   if (!Array.isArray(actions)) return [];
 
@@ -208,6 +225,8 @@ function normalizeActions(actions: unknown): ParsedAction[] {
     .filter((x): x is ParsedAction => Boolean(x));
 }
 
+// Default values for a brand-new adversary in the builder. DEF stats
+// default to 10 (average), everything else to 0/empty.
 const EMPTY_ADVERSARY: Adversary = {
   name: "",
   tier: "",
@@ -217,11 +236,11 @@ const EMPTY_ADVERSARY: Adversary = {
   physical: { str: 0, def: 10, spd: 0 },
   cognitive: { int: 0, def: 10, wil: 0 },
   spiritual: { awa: 0, def: 10, pre: 0 },
-  health: 11,
+  health: 0,
   healthRange: "",
-  focus: 4,
+  focus: 0,
   investiture: 0,
-  deflect: 0,
+  deflect: "",
   movement: "",
   senses: "",
   languages: "",
@@ -263,6 +282,9 @@ function normalizeName(value: string) {
     .replace(/[^a-z0-9]+/g, " ");
 }
 
+// One-line description shown in library rows and the preview header,
+// e.g. "Tier 3 Elite • Large Chasmfiend". Falls back to role if size/species
+// aren't set.
 function makeSummary(a: Adversary) {
   const tier = a.tier ?? "—";
   const type = a.type ?? "—";
@@ -303,6 +325,9 @@ function exportJsonFile(adversary: Adversary) {
   URL.revokeObjectURL(url);
 }
 
+// Renders the little cost glyph next to an action: a triangle per action
+// point (1–3), a hollow triangle for free actions, and a custom hooked
+// arrow for reactions. `cost` values map 1:1 to the game's action economy.
 function ActionCostIcon({
   cost,
   inline = false,
@@ -471,6 +496,10 @@ function ComplicationIcon() {
   );
 }
 
+// Renders rules text that may contain inline markup tokens like [free],
+// [action], [double], [opportunity], [complication], plus basic **bold**
+// and *italic* markdown. This is the shared renderer used anywhere rules
+// text is displayed (features, actions, opportunities/complications, tactics).
 function InlineRulesText({ text }: { text: string }) {
   const lines = text.split("\n");
 
@@ -722,6 +751,9 @@ type PreviewBoundaryState = {
   hasError: boolean;
 };
 
+// Catches render errors from malformed/imported stat blocks so one bad
+// entry doesn't crash the whole extension. Resets itself automatically
+// when the underlying adversary data changes (componentDidUpdate below).
 class PreviewErrorBoundary extends React.Component<
   PreviewBoundaryProps,
   PreviewBoundaryState
@@ -769,6 +801,8 @@ class PreviewErrorBoundary extends React.Component<
   }
 }
 
+// Read-only rendered stat block — this is the "final" display shown in
+// the Preview tab and used when a token has a linked adversary.
 function AdversaryCard({ adversary }: { adversary: Adversary }) {
   return (
     <div
@@ -1244,12 +1278,17 @@ function BuilderCard({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const [ready, setReady] = useState(false);
+  // Tracks the OBR scene selection and whatever adversary data (if any)
+  // is linked to the metadata of the currently selected token.
   const [selection, setSelection] = useState<string[]>([]);
   const [selectedTokenName, setSelectedTokenName] = useState("");
   const [attachedAdversary, setAttachedAdversary] = useState<Adversary | null>(null);
 
   const [builderAdversary, setBuilderAdversary] = useState<Adversary>(EMPTY_ADVERSARY);
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
+  // The saved-adversary library, persisted to localStorage (see the
+  // load/save effects below). editingLibraryId tracks which entry the
+  // builder is currently modifying vs. creating new.
   const [library, setLibrary] = useState<LibraryEntry[]>([]);
   const [libraryLoaded, setLibraryLoaded] = useState(false);
   const [selectedLibraryId, setSelectedLibraryId] = useState<string | null>(null);
@@ -1268,6 +1307,9 @@ export default function App() {
   const menuBarRef = useRef<HTMLDivElement | null>(null);
   const tabRowRef = useRef<HTMLDivElement | null>(null);
 
+  // When a selected token has NO linked metadata, we try to auto-match it
+  // to a library entry by name (see the selection effect below) so the GM
+  // can quickly attach the right stat block.
   const [tokenMatchedLibraryId, setTokenMatchedLibraryId] = useState<string | null>(null);
 
   const iconButtonStyle = {
@@ -1298,6 +1340,8 @@ const tabLabelRefs = useRef<Record<ActiveTab, HTMLSpanElement | null>>({
 
 const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
 
+  // One-time load of the saved library on mount. Falls back to an empty
+  // library if localStorage is empty or corrupted.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LIBRARY_STORAGE_KEY);
@@ -1312,6 +1356,9 @@ const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
     }
   }, []);
 
+  // Measures the active tab label's position/width so the sliding
+  // underline bar can animate to it. Recalculated on tab change and window
+  // resize since label widths aren't fixed.
   useEffect(() => {
   const updateIndicator = () => {
     const activeLabel = tabLabelRefs.current[activeTab];
@@ -1337,6 +1384,9 @@ const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
   };
 }, [activeTab]);
 
+  // Persists the library to localStorage on every change, plus writes a
+  // timestamped backup copy under a separate key as a crude safety net
+  // against a corrupted write clobbering the main save.
   useEffect(() => {
   if (!libraryLoaded) return;
 
@@ -1352,6 +1402,8 @@ const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
   localStorage.setItem(LIBRARY_BACKUP_KEY, JSON.stringify(backup));
 }, [library, libraryLoaded]);
 
+  // Boilerplate OBR startup: wait for the extension to be ready, then
+  // track the player's current selection going forward.
   useEffect(() => {
     OBR.onReady(async () => {
       setReady(true);
@@ -1366,6 +1418,8 @@ const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
     });
   }, []);
 
+  // Closes the File/Attach dropdown menus (and any open submenu) when the
+  // user clicks anywhere outside the menu bar.
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
       if (!menuBarRef.current) return;
@@ -1381,6 +1435,13 @@ const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
     };
   }, []);
 
+  // Runs whenever the token selection changes. Priority order:
+  //   1. If the selected token already has adversary metadata attached,
+  //      load it straight into preview.
+  //   2. Otherwise, try to auto-match the token's name against the saved
+  //      library (case/parenthetical-insensitive) and surface that match
+  //      in the "Match found" banner instead of auto-attaching it.
+  // Clearing selection resets all of the above.
   useEffect(() => {
     if (selection.length === 0) {
   setAttachedAdversary(null);
@@ -1395,6 +1456,8 @@ const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
       const tokenName = first?.name ?? "";
       setSelectedTokenName(tokenName);
 
+      // Older saved tokens may have used the key "monster" instead of
+      // "adversary" — support both so old tokens don't silently break.
       const data = first?.metadata?.[METADATA_KEY] as
         | { version: number; adversary: Adversary }
         | { version: number; monster: Adversary }
@@ -1440,6 +1503,13 @@ setActiveTab("library");
   return () => window.clearTimeout(timer);
 }, [statusMessage]);
 
+// These derived values resolve "what adversary are we actually looking at
+// right now" across three overlapping sources of truth: a manually
+// selected library entry, an auto-matched one from the token name,
+// whatever's attached to the token, and whatever's in the builder.
+// currentWorkingAdversary (defined further below) = what "Attach"/"Save"
+// act on. previewAdversary = what the Preview tab actually renders
+// (token data wins over everything else there).
 const effectiveLibraryId = selectedLibraryId ?? tokenMatchedLibraryId;
 
 const selectedLibraryEntry = useMemo(
@@ -1491,6 +1561,9 @@ const selectedLibraryEntry = useMemo(
     return first && /[A-Z]/.test(first) ? first : "#";
   }
 
+  // Writes/removes the adversary JSON directly into the selected token's
+  // OBR metadata under METADATA_KEY, so the stat block travels with the
+  // token even if the library entry is later edited or deleted.
   async function attachAdversaryData(parsed: Adversary) {
     if (selection.length === 0) return;
 
@@ -1524,6 +1597,10 @@ const selectedLibraryEntry = useMemo(
     setOpenMenu(null);
   }
 
+  // A-Z quick-jump sidebar for the library list. jumpToLetter scrolls to
+  // the first matching entry; the useEffect below tracks whichever entry
+  // is currently closest to the top of the scroll container, so the
+  // sidebar highlight stays in sync while scrolling.
   function jumpToLetter(letter: string) {
     const match = sortedFilteredLibrary.find(
       (entry) => getEntryLetter(entry.name) === letter
@@ -1580,6 +1657,10 @@ const selectedLibraryEntry = useMemo(
     };
   }, [sortedFilteredLibrary]);
 
+  // "Save" updates the entry currently being edited (or creates one if
+  // none is being edited); "Save As New" (below) always creates a fresh
+  // entry even if we're mid-edit of an existing one — used for cloning
+  // variants of an adversary.
   function saveCurrentToLibrary() {
   const current = builderAdversary;
 
@@ -1858,6 +1939,11 @@ function updateTactics(value: string) {
     setOpenMenu(null);
   }
 
+  // Accepts several possible import shapes for backward-compatibility:
+  //   - an array of {id, name, summary, data} library entries (our own export format)
+  //   - a bare array of adversary blocks (no wrapper)
+  //   - a single adversary object
+  // Existing entries are matched/overwritten by id; everything else is added.
   function runLibraryImport(parsed: any) {
   try {
     let entries: LibraryEntry[] = [];
@@ -1997,6 +2083,9 @@ if (existingIndex >= 0) {
     );
   }
 
+  // Dropdown menus flip to align/open on the opposite side near the edge
+  // of the panel (library menu on the left, token menu on the right) so
+  // they don't get clipped by the extension's narrow width.
   function getDropdownStyle(alignRight = false): React.CSSProperties {
   return {
     position: "absolute",
@@ -2064,6 +2153,9 @@ if (existingIndex >= 0) {
   );
 }
 
+// Shared renderer for both the "File" (library) and "Attach" (token)
+// dropdown menus in the top bar — driven by the `menu` param rather than
+// duplicating the open/close/submenu logic twice.
 function renderMenu(menu: Exclude<OpenMenu, null>) {
   const isOpen = openMenu === menu;
   const isDisabled = menu === "token" && selection.length === 0;
