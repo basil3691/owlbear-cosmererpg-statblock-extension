@@ -3057,7 +3057,12 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
 
   return (
   <div
-    style={{ position: "relative" }}
+    style={{
+  position: "relative",
+  paddingLeft: 10,
+  marginLeft: -10,
+  paddingBottom: 6,
+}}
     onMouseLeave={() => {
       setOpenMenu(null);
       setOpenSubmenu(null);
