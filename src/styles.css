@@ -1,0 +1,231 @@
+/* =========================================================
+   UNIVERSAL — does not change with setting/theme
+   ========================================================= */
+
+:root {
+  /* Shape */
+  --radius-small: 4px;
+  --radius-medium: 6px;
+  --radius-large: 8px;
+  --radius-card: 10px;
+
+  /* Shadows */
+  --shadow-small: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-medium: 0 1px 4px rgba(0, 0, 0, 0.08);
+  --shadow-menu: 0 2px 8px rgba(0, 0, 0, 0.12);
+  --shadow-large: 0 4px 12px rgba(0, 0, 0, 0.18);
+  --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.25);
+
+  /* Overlay */
+  --overlay-background: rgba(0, 0, 0, 0.35);
+
+  /* Universal game-rule colors */
+  --rules-opportunity: #1f5fbf;
+  --rules-complication: #b71c1c;
+
+  /* Universal status colors */
+  --status-danger: #9b2c2c;
+  --status-error-text: #7a1f1f;
+
+  /* Universal disabled controls */
+  --disabled-border: #e5e7eb;
+  --disabled-background: #f3f4f6;
+  --disabled-text: #9ca3af;
+}
+
+/* =========================================================
+   SHARED COMPONENT STYLES
+   Uses the active theme's variables.
+   ========================================================= */
+
+.adversary-card strong {
+  color: var(--theme-text-primary);
+}
+
+
+/* =========================================================
+   STORMLIGHT
+   Everything here is allowed to change in another theme.
+   ========================================================= */
+
+.theme-stormlight {
+  /* Theme preview metadata */
+  --theme-name: "Stormlight";
+  --theme-preview-primary: #1f3b67;
+  --theme-preview-secondary: #c69a3a;
+  --theme-preview-background: #f7f1e3;
+
+  /* Main identity */
+  --theme-primary: #1f3b67;
+  --theme-accent: #c69a3a;
+
+  /* Backgrounds */
+  --theme-background: #f7f1e3;
+  --theme-background-alt: #efe4ca;
+  --theme-panel: #fffaf0;
+  --theme-panel-active: #efe3c9;
+  --theme-panel-muted: #f3e6c7;
+  --theme-panel-soft: #f7f2e7;
+
+  /* Borders */
+  --theme-border: #d8c08a;
+  --theme-border-muted: #b0a58a;
+
+  /* Text */
+  --theme-text: #222;
+  --theme-text-primary: #1f3b67;
+  --theme-text-muted: #6b7280;
+  --theme-text-secondary: #5b5670;
+  --theme-text-subtle: #9a9487;
+  --theme-text-on-accent: #fff;
+  --theme-card-text: #1f3b67;
+--theme-stat-header: #c69a3a;
+
+  /* Typography */
+  --theme-font: Georgia, serif;
+  --theme-ui-font: sans-serif;
+
+  /* Rules icons whose color DOES follow the setting */
+  --theme-action: #1f3b67;
+
+  /* Theme-specific secondary/accent shades */
+  --theme-primary-dark: #24406e;
+  --theme-secondary: #6b7a99;
+
+  /* Warning surface */
+  --theme-warning-background: #fff7df;
+
+  /* Complete application background */
+  --theme-app-background:
+    linear-gradient(
+      180deg,
+      var(--theme-background) 0%,
+      var(--theme-background-alt) 100%
+    );
+}
+
+
+/* =========================================================
+   MISTBORN THEME
+   Tentative palette based on Mistborn handbook stat blocks.
+   ========================================================= */
+
+.theme-mistborn {
+  /* Theme preview metadata */
+  --theme-name: "Mistborn";
+  --theme-preview-primary: #7a292d;
+  --theme-preview-secondary: #777574;
+  --theme-preview-background: #f1f0ee;
+
+  /* Main identity */
+  --theme-primary: #7a292d;
+  --theme-accent: #777574;
+
+  /* Backgrounds */
+  --theme-background: #f1f0ee;
+  --theme-background-alt: #dedbd8;
+
+  --theme-panel: #ffffff;
+  --theme-panel-active: #e7e4e2;
+  --theme-panel-muted: #ece9e7;
+  --theme-panel-soft: #f5f3f2;
+
+  /* Borders */
+  --theme-border: #8b8886;
+  --theme-border-muted: #aaa6a3;
+
+  /* Text */
+  --theme-text: #222222;
+  --theme-text-primary: #7a292d;
+  --theme-text-muted: #686461;
+  --theme-text-secondary: #4d4947;
+  --theme-text-subtle: #918b87;
+  --theme-text-on-accent: #ffffff;
+  --theme-card-text: #222222;
+--theme-stat-header: #777574;
+
+  /* Typography */
+  --theme-font: Georgia, serif;
+  --theme-ui-font: sans-serif;
+
+  /* Action / Reaction symbols */
+  --theme-action: #7a292d;
+
+  /* Secondary theme colors */
+  --theme-primary-dark: #5f2024;
+  --theme-secondary: #777574;
+
+  /* Warning surface */
+  --theme-warning-background: #f4eeee;
+
+  /* Complete application background */
+  --theme-app-background:
+    linear-gradient(
+      180deg,
+      var(--theme-background) 0%,
+      var(--theme-background-alt) 100%
+    );
+}
+
+
+/* =========================================================
+   FOREST THEME
+   Earthy woodland palette with forest-green accents.
+   ========================================================= */
+
+.theme-forest {
+  /* Theme preview metadata */
+  --theme-name: "Forest";
+  --theme-preview-primary: #24543a;
+  --theme-preview-secondary: #9a7b4f;
+  --theme-preview-background: #eef2e8;
+
+  /* Main identity */
+  --theme-primary: #24543a;
+  --theme-accent: #2f6b48;
+
+  /* Backgrounds */
+  --theme-background: #eef2e8;
+  --theme-background-alt: #dce5d5;
+
+  --theme-panel: #f8faf4;
+  --theme-panel-active: #d8e5d4;
+  --theme-panel-muted: #e2eadc;
+  --theme-panel-soft: #f0f4eb;
+
+  /* Borders */
+  --theme-border: #9caf91;
+  --theme-border-muted: #b4bea9;
+
+  /* Text */
+  --theme-text: #242b25;
+  --theme-text-primary: #24543a;
+  --theme-text-muted: #687268;
+  --theme-text-secondary: #4f6253;
+  --theme-text-subtle: #899487;
+  --theme-text-on-accent: #ffffff;
+  --theme-card-text: #26382b;
+  --theme-stat-header: #2f6b48;
+
+  /* Typography */
+  --theme-font: Georgia, serif;
+  --theme-ui-font: sans-serif;
+
+  /* Action / Reaction symbols */
+  --theme-action: #24543a;
+
+  /* Secondary theme colors */
+  --theme-primary-dark: #193d2a;
+  --theme-secondary: #6f8067;
+
+  /* Warning surface */
+  --theme-warning-background: #f3f1df;
+
+  /* Complete application background */
+  --theme-app-background:
+    linear-gradient(
+      180deg,
+      var(--theme-background) 0%,
+      var(--theme-background-alt) 100%
+    );
+}

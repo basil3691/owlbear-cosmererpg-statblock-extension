@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import OBR from "@owlbear-rodeo/sdk";
 import { createClient } from "@supabase/supabase-js";
+import "./styles.css";
 
 const SUPABASE_URL = "https://rjxygozhnslwwmomvzmz.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY =
@@ -343,7 +344,7 @@ function ActionCostIcon({
   cost?: ActionCost;
   inline?: boolean;
 }) {
-  const color = "#1f3b67";
+  const color = "var(--theme-action)";
   const marginRight = inline ? 0 : 8;
   const commonStyle = {
     marginRight,
@@ -452,7 +453,7 @@ function OpportunityIcon() {
         cy="50"
         r="34"
         fill="none"
-        stroke="#1f5fbf"
+        stroke="var(--rules-opportunity)"
         strokeWidth="8"
       />
       <path
@@ -460,7 +461,7 @@ function OpportunityIcon() {
            M88 50 L72 56 L72 44 Z
            M50 88 L44 72 L56 72 Z
            M12 50 L28 44 L28 56 Z"
-        fill="#1f5fbf"
+        fill="var(--rules-opportunity)"
       />
       <path
         d="M50 26
@@ -469,7 +470,7 @@ function OpportunityIcon() {
            C42 66, 34 58, 26 50
            C34 42, 42 34, 50 26 Z"
         fill="white"
-        stroke="#1f5fbf"
+        stroke="var(--rules-opportunity)"
         strokeWidth="6"
         strokeLinejoin="round"
       />
@@ -486,7 +487,7 @@ function ComplicationIcon() {
       style={{ verticalAlign: "middle", margin: "0 2px" }}
       aria-hidden="true"
     >
-      <g fill="#b71c1c">
+      <g fill="var(--rules-complication)">
         <polygon points="50,6 59,26 41,26" />
         <polygon points="71,12 67,30 53,22" />
         <polygon points="88,28 72,39 67,24" />
@@ -579,7 +580,7 @@ function SectionSummary({ title }: { title: string }) {
         fontWeight: "bold",
         letterSpacing: 1,
         marginBottom: 6,
-        color: "#1f3b67",
+        color: "var(--theme-text-primary)",
         listStyle: "none",
       }}
     >
@@ -597,6 +598,39 @@ function SectionSummary({ title }: { title: string }) {
   );
 }
 
+  function focusNextBuilderField(
+  current: HTMLElement,
+  e?: React.KeyboardEvent
+) {
+  if (e) {
+    e.preventDefault();
+  }
+
+  const builder =
+    current.closest('[data-builder-root="true"]');
+
+  if (!builder) return;
+
+  const fields = Array.from(
+    builder.querySelectorAll<HTMLElement>(
+      'input:not([disabled]), textarea:not([disabled]), select:not([disabled])'
+    )
+  ).filter((el) => {
+    const style = window.getComputedStyle(el);
+
+    return (
+      style.display !== "none" &&
+      style.visibility !== "hidden"
+    );
+  });
+
+  const currentIndex = fields.indexOf(current);
+
+  if (currentIndex >= 0 && currentIndex < fields.length - 1) {
+    fields[currentIndex + 1]?.focus();
+  }
+}
+
 function BuilderNumberInput({
   value,
   onChange,
@@ -612,7 +646,7 @@ function BuilderNumberInput({
       inputMode="numeric"
       value={value ?? 0}
       onFocus={(e) => e.currentTarget.select()}
-      onChange={(e) => {
+            onChange={(e) => {
         const raw = e.target.value;
 
         if (!/^-?\d*$/.test(raw)) return;
@@ -620,10 +654,15 @@ function BuilderNumberInput({
 
         onChange(Number(raw));
       }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          focusNextBuilderField(e.currentTarget, e);
+        }
+      }}
       style={{
         width,
         padding: "4px 6px",
-        border: "1px solid #c69a3a",
+        border: "1px solid var(--theme-accent)",
         borderRadius: 4,
         fontSize: 14,
         textAlign: "center",
@@ -656,13 +695,21 @@ function BuilderTextInput({
       value={value ?? ""}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
-      onKeyDown={onKeyDown}
+            onKeyDown={(e) => {
+        onKeyDown?.(e);
+
+        if (e.defaultPrevented) return;
+
+        if (e.key === "Enter") {
+          focusNextBuilderField(e.currentTarget, e);
+        }
+      }}
       data-action-index={dataActionIndex}
       data-action-focus-index={dataActionFocusIndex}
       style={{
         width,
         padding: "6px 8px",
-        border: "1px solid #c69a3a",
+        border: "1px solid var(--theme-accent)",
         borderRadius: 4,
         fontSize: 14,
         boxSizing: "border-box",
@@ -703,7 +750,7 @@ function BuilderLabeledInput({
         style={{
           fontSize: 12,
           fontWeight: 700,
-          color: "#1f3b67",
+          color: "var(--theme-text-primary)",
           letterSpacing: 0.4,
           textTransform: "uppercase",
           width: labelWidth,
@@ -793,7 +840,7 @@ function BuilderSkillList({
           style={{
             width: "100%",
             padding: "6px 8px",
-            border: "1px solid #c69a3a",
+            border: "1px solid var(--theme-accent)",
             borderRadius: 4,
             fontSize: 14,
             boxSizing: "border-box",
@@ -807,10 +854,10 @@ function BuilderSkillList({
         style={{
           justifySelf: "start",
           padding: "4px 10px",
-          border: "1px solid #d8c08a",
+          border: "1px solid var(--theme-border)",
           borderRadius: 6,
-          background: "#fffaf0",
-          color: "#1f3b67",
+          background: "var(--theme-panel)",
+          color: "var(--theme-text-primary)",
           fontWeight: 600,
           cursor: "pointer",
           fontSize: 12,
@@ -842,13 +889,64 @@ function BuilderTextArea({
       style={{
         width: "100%",
         padding: "6px 8px",
-        border: "1px solid #c69a3a",
+        border: "1px solid var(--theme-accent)",
         borderRadius: 4,
         fontSize: 14,
         boxSizing: "border-box",
         resize: "vertical",
       }}
     />
+  );
+}
+
+function BuilderLabeledTextArea({
+  label,
+  value,
+  onChange,
+  placeholder,
+  rows = 3,
+  labelWidth = 90,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  rows?: number;
+  labelWidth?: number;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 6,
+        width: "100%",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          color: "var(--theme-text-primary)",
+          letterSpacing: 0.4,
+          textTransform: "uppercase",
+          width: labelWidth,
+          flexShrink: 0,
+          paddingTop: 7,
+        }}
+      >
+        {label}:
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <BuilderTextArea
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          rows={rows}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -871,9 +969,13 @@ function BuilderChoiceButton({
         padding: compact ? "2px 8px" : "7px 12px",
         minHeight: compact ? 30 : 0,
         borderRadius: compact ? 6 : 8,
-        border: active ? "2px solid #c69a3a" : "1px solid #d8c08a",
-        background: active ? "#efe3c9" : "#fffaf0",
-        color: "#1f3b67",
+        border: active
+        ? "2px solid var(--theme-accent)"
+        : "1px solid var(--theme-border)",
+      background: active
+        ? "var(--theme-panel-active)"
+        : "var(--theme-panel)",
+      color: "var(--theme-text-primary)",
         fontWeight: active ? 700 : 600,
         cursor: "pointer",
         fontSize: compact ? 11 : 13,
@@ -906,7 +1008,7 @@ function BuilderChoiceRow({
         style={{
           fontSize: 12,
           fontWeight: 700,
-          color: "#1f3b67",
+          color: "var(--theme-text-primary)",
           letterSpacing: 0.4,
           textTransform: "uppercase",
           minWidth: 62,
@@ -962,10 +1064,10 @@ class PreviewErrorBoundary extends React.Component<
         <div
           style={{
             padding: 12,
-            border: "1px solid #c69a3a",
+            border: "1px solid var(--theme-accent)",
             borderRadius: 8,
-            background: "#fff7df",
-            color: "#7a1f1f",
+            background: "var(--theme-warning-background)",
+            color: "var(--status-error-text)",
           }}
         >
           <strong>Preview Error</strong>
@@ -985,18 +1087,19 @@ class PreviewErrorBoundary extends React.Component<
 function AdversaryCard({ adversary }: { adversary: Adversary }) {
   return (
     <div
+      className="adversary-card"
       style={{
         marginTop: 8,
-        border: "2px solid #c69a3a",
+        border: "2px solid var(--theme-accent)",
         borderRadius: 8,
         padding: 12,
-        background: "#f7f1e3",
-        color: "#1f3b67",
-        fontFamily: "Georgia, serif",
+        background: "var(--theme-background)",
+        color: "var(--theme-card-text)",
+        fontFamily: "var(--theme-font)",
         textAlign: "left",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
-      }}
-    >
+        boxShadow: "var(--shadow-medium)",
+        }}
+      >
       <h2
         style={{
           margin: "0 0 4px 0",
@@ -1012,7 +1115,7 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
   style={{
     margin: "0 0 2px 0",
     fontStyle: "italic",
-    color: "#222",
+    color: "var(--theme-text)",
   }}
 >
   {makeSummary(adversary)}
@@ -1023,27 +1126,27 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
     margin: "0 0 10px 0",
     fontSize: 11,
     letterSpacing: 0.3,
-    color: "#6b7280",
+    color: "var(--theme-text-muted)",
     textTransform: "uppercase",
   }}
 >
   {adversary.source ?? "Official"} {adversary.setting ?? "Stormlight"}
 </p>
 
-      <div
+            <div
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr 1fr",
           gap: 0,
           marginBottom: 10,
-          border: "2px solid #c69a3a",
+          border: "2px solid var(--theme-accent)",
         }}
       >
-        <div style={{ borderRight: "2px solid #c69a3a" }}>
+        <div style={{ borderRight: "2px solid var(--theme-accent)" }}>
           <div
             style={{
-              background: "#c69a3a",
-              color: "#fff",
+              background: "var(--theme-stat-header)",
+              color: "var(--theme-text-on-accent)",
               textAlign: "center",
               fontWeight: "bold",
               padding: "2px 0",
@@ -1053,6 +1156,7 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
           >
             PHYSICAL
           </div>
+
           <div
             style={{
               display: "grid",
@@ -1065,15 +1169,27 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
           >
             <div>
               <div style={{ fontSize: 12 }}>STR</div>
-              <div style={{ fontSize: 22 }}>{adversary.physical?.str ?? "—"}</div>
+              <div style={{ fontSize: 22 }}>
+                {adversary.physical?.str ?? "—"}
+              </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ fontSize: 12, lineHeight: 1, marginBottom: 2 }}>DEF</div>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <div style={{ fontSize: 12, lineHeight: 1, marginBottom: 2 }}>
+                DEF
+              </div>
+
               <svg width="46" height="42" viewBox="0 0 46 42">
                 <path
                   d="M2 2 H44 V26 L23 40 L2 26 Z"
-                  fill="#f7f1e3"
-                  stroke="#c69a3a"
+                  fill="var(--theme-background)"
+                  stroke="var(--theme-accent)"
                   strokeWidth="2"
                 />
                 <text
@@ -1082,25 +1198,28 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
                   textAnchor="middle"
                   fontSize="18"
                   fontWeight="bold"
-                  fill="#1f3b67"
-                  fontFamily="Georgia, serif"
+                  fill="var(--theme-text-primary)"
+                  fontFamily="var(--theme-font)"
                 >
                   {adversary.physical?.def ?? "—"}
                 </text>
               </svg>
             </div>
+
             <div>
               <div style={{ fontSize: 12 }}>SPD</div>
-              <div style={{ fontSize: 22 }}>{adversary.physical?.spd ?? "—"}</div>
+              <div style={{ fontSize: 22 }}>
+                {adversary.physical?.spd ?? "—"}
+              </div>
             </div>
           </div>
         </div>
 
-        <div style={{ borderRight: "2px solid #c69a3a" }}>
+        <div style={{ borderRight: "2px solid var(--theme-accent)" }}>
           <div
             style={{
-              background: "#c69a3a",
-              color: "#fff",
+              background: "var(--theme-stat-header)",
+              color: "var(--theme-text-on-accent)",
               textAlign: "center",
               fontWeight: "bold",
               padding: "2px 0",
@@ -1110,6 +1229,7 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
           >
             COGNITIVE
           </div>
+
           <div
             style={{
               display: "grid",
@@ -1122,15 +1242,27 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
           >
             <div>
               <div style={{ fontSize: 12 }}>INT</div>
-              <div style={{ fontSize: 22 }}>{adversary.cognitive?.int ?? "—"}</div>
+              <div style={{ fontSize: 22 }}>
+                {adversary.cognitive?.int ?? "—"}
+              </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ fontSize: 12, lineHeight: 1, marginBottom: 2 }}>DEF</div>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <div style={{ fontSize: 12, lineHeight: 1, marginBottom: 2 }}>
+                DEF
+              </div>
+
               <svg width="46" height="42" viewBox="0 0 46 42">
                 <path
                   d="M2 2 H44 V26 L23 40 L2 26 Z"
-                  fill="#f7f1e3"
-                  stroke="#c69a3a"
+                  fill="var(--theme-background)"
+                  stroke="var(--theme-accent)"
                   strokeWidth="2"
                 />
                 <text
@@ -1139,16 +1271,19 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
                   textAnchor="middle"
                   fontSize="18"
                   fontWeight="bold"
-                  fill="#1f3b67"
-                  fontFamily="Georgia, serif"
+                  fill="var(--theme-text-primary)"
+                  fontFamily="var(--theme-font)"
                 >
                   {adversary.cognitive?.def ?? "—"}
                 </text>
               </svg>
             </div>
+
             <div>
               <div style={{ fontSize: 12 }}>WIL</div>
-              <div style={{ fontSize: 22 }}>{adversary.cognitive?.wil ?? "—"}</div>
+              <div style={{ fontSize: 22 }}>
+                {adversary.cognitive?.wil ?? "—"}
+              </div>
             </div>
           </div>
         </div>
@@ -1156,8 +1291,8 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
         <div>
           <div
             style={{
-              background: "#c69a3a",
-              color: "#fff",
+              background: "var(--theme-stat-header)",
+              color: "var(--theme-text-on-accent)",
               textAlign: "center",
               fontWeight: "bold",
               padding: "2px 0",
@@ -1167,6 +1302,7 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
           >
             SPIRITUAL
           </div>
+
           <div
             style={{
               display: "grid",
@@ -1179,15 +1315,27 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
           >
             <div>
               <div style={{ fontSize: 12 }}>AWA</div>
-              <div style={{ fontSize: 22 }}>{adversary.spiritual?.awa ?? "—"}</div>
+              <div style={{ fontSize: 22 }}>
+                {adversary.spiritual?.awa ?? "—"}
+              </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ fontSize: 12, lineHeight: 1, marginBottom: 2 }}>DEF</div>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <div style={{ fontSize: 12, lineHeight: 1, marginBottom: 2 }}>
+                DEF
+              </div>
+
               <svg width="46" height="42" viewBox="0 0 46 42">
                 <path
                   d="M2 2 H44 V26 L23 40 L2 26 Z"
-                  fill="#f7f1e3"
-                  stroke="#c69a3a"
+                  fill="var(--theme-background)"
+                  stroke="var(--theme-accent)"
                   strokeWidth="2"
                 />
                 <text
@@ -1196,16 +1344,19 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
                   textAnchor="middle"
                   fontSize="18"
                   fontWeight="bold"
-                  fill="#1f3b67"
-                  fontFamily="Georgia, serif"
+                  fill="var(--theme-text-primary)"
+                  fontFamily="var(--theme-font)"
                 >
                   {adversary.spiritual?.def ?? "—"}
                 </text>
               </svg>
             </div>
+
             <div>
               <div style={{ fontSize: 12 }}>PRE</div>
-              <div style={{ fontSize: 22 }}>{adversary.spiritual?.pre ?? "—"}</div>
+              <div style={{ fontSize: 22 }}>
+                {adversary.spiritual?.pre ?? "—"}
+              </div>
             </div>
           </div>
         </div>
@@ -1217,7 +1368,7 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
           alignItems: "baseline",
           gap: 18,
           margin: "6px 0",
-          color: "#1f3b67",
+          color: "var(--theme-text-primary)",
           fontWeight: 600,
           fontSize: 15,
           flexWrap: "wrap",
@@ -1237,7 +1388,7 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
         </span>
       </div>
 
-      <div style={{ borderTop: "2px solid #c69a3a", margin: "6px 0" }} />
+      <div style={{ borderTop: "2px solid var(--theme-accent)", margin: "6px 0" }} />
 
       <details open>
         <SectionSummary title="DETAILS" />
@@ -1265,7 +1416,7 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
         </p>
       </details>
 
-      <div style={{ borderTop: "2px solid #c69a3a", margin: "8px 0" }} />
+      <div style={{ borderTop: "2px solid var(--theme-accent)", margin: "8px 0" }} />
 
       <details open>
         <SectionSummary title="SKILLS" />
@@ -1295,7 +1446,7 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
 
       {(adversary.features ?? []).length > 0 && (
         <>
-          <div style={{ borderTop: "2px solid #c69a3a", margin: "8px 0" }} />
+          <div style={{ borderTop: "2px solid var(--theme-accent)", margin: "8px 0" }} />
           <details open>
             <SectionSummary title="FEATURES" />
 
@@ -1310,7 +1461,7 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
 
       {(adversary.actions ?? []).length > 0 && (
         <>
-          <div style={{ borderTop: "2px solid #c69a3a", margin: "8px 0" }} />
+          <div style={{ borderTop: "2px solid var(--theme-accent)", margin: "8px 0" }} />
           <details open>
             <SectionSummary title="ACTIONS" />
 
@@ -1392,19 +1543,16 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
       )}
 
       {adversary.opportunitiesAndComplications &&
-  (adversary.opportunitiesAndComplications.intro ||
-    adversary.opportunitiesAndComplications.opportunity ||
-    adversary.opportunitiesAndComplications.complication) && (
+      (adversary.opportunitiesAndComplications.opportunity ||
+       adversary.opportunitiesAndComplications.complication) && (
     <>
-      <div style={{ borderTop: "2px solid #c69a3a", margin: "8px 0" }} />
+      <div style={{ borderTop: "2px solid var(--theme-accent)", margin: "8px 0" }} />
       <details open>
         <SectionSummary title="OPPORTUNITIES AND COMPLICATIONS" />
 
-        {adversary.opportunitiesAndComplications.intro && (
-          <p style={{ margin: "4px 0" }}>
-            <InlineRulesText text={adversary.opportunitiesAndComplications.intro} />
-          </p>
-        )}
+                <p style={{ margin: "4px 0" }}>
+          The following options are available when an enemy gains an Opportunity or Complication during a scene with this adversary:
+        </p>
 
         {adversary.opportunitiesAndComplications.opportunity && (
           <p style={{ margin: "4px 0" }}>
@@ -1425,7 +1573,7 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
 
       {adversary.tactics && (
         <>
-          <div style={{ borderTop: "2px solid #c69a3a", margin: "8px 0" }} />
+          <div style={{ borderTop: "2px solid var(--theme-accent)", margin: "8px 0" }} />
           <details>
             <SectionSummary title="TACTICS" />
             <p style={{ margin: "4px 0" }}>
@@ -1442,17 +1590,88 @@ function BuilderCard({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        background: "#fffaf0",
-        border: "1px solid #d8c08a",
+        background: "var(--theme-panel)",
+        border: "1px solid var(--theme-border)",
         borderRadius: 10,
         padding: 10,
         marginBottom: 12,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        boxShadow: "var(--shadow-small)",
       }}
     >
       {children}
     </div>
   );
+}
+
+type ThemeInfo = {
+  id: string;
+  className: string;
+  name: string;
+  previewPrimary: string;
+  previewSecondary: string;
+  previewBackground: string;
+};
+
+function discoverThemes(): ThemeInfo[] {
+  const themeClassNames = new Set<string>();
+
+  for (const styleSheet of Array.from(document.styleSheets)) {
+    let rules: CSSRuleList;
+
+    try {
+      rules = styleSheet.cssRules;
+    } catch {
+      // Ignore stylesheets whose rules the browser does not allow us to inspect.
+      continue;
+    }
+
+    for (const rule of Array.from(rules)) {
+      if (!(rule instanceof CSSStyleRule)) continue;
+
+      const selectors = rule.selectorText.split(",");
+
+      for (const selector of selectors) {
+        const match = selector.trim().match(/^\.theme-([a-z0-9_-]+)$/i);
+
+        if (match) {
+          themeClassNames.add(`theme-${match[1]}`);
+        }
+      }
+    }
+  }
+
+  return Array.from(themeClassNames).map((className) => {
+    const probe = document.createElement("div");
+    probe.className = className;
+    probe.style.display = "none";
+    document.body.appendChild(probe);
+
+    const styles = getComputedStyle(probe);
+
+    const name = styles
+      .getPropertyValue("--theme-name")
+      .trim()
+      .replace(/^["']|["']$/g, "");
+
+    const theme: ThemeInfo = {
+      id: className.replace(/^theme-/, ""),
+      className,
+      name: name || className.replace(/^theme-/, ""),
+      previewPrimary: styles
+        .getPropertyValue("--theme-preview-primary")
+        .trim(),
+      previewSecondary: styles
+        .getPropertyValue("--theme-preview-secondary")
+        .trim(),
+      previewBackground: styles
+        .getPropertyValue("--theme-preview-background")
+        .trim(),
+    };
+
+    probe.remove();
+
+    return theme;
+  });
 }
 
 export default function App() {
@@ -1464,7 +1683,14 @@ export default function App() {
   const [attachedAdversary, setAttachedAdversary] = useState<Adversary | null>(null);
 
   const [builderAdversary, setBuilderAdversary] = useState<Adversary>(EMPTY_ADVERSARY);
+
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
+
+  const appTitle = "Cosmere Stat Blocks";
+
+  const [themes, setThemes] = useState<ThemeInfo[]>([]);
+  const [activeTheme, setActiveTheme] = useState("stormlight");
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
  // The adversary library, loaded from Supabase.
 // editingLibraryId tracks which entry the builder is currently
 // modifying vs. creating new.
@@ -1536,7 +1762,7 @@ const [activeLetter, setActiveLetter] = useState<string | null>(null);
     alignItems: "center",
     justifyContent: "center",
     padding: 0,
-    color: "#1f3b67",
+    color: "var(--theme-text-primary)",
     transition: "background 0.15s ease",
   } as const;
 
@@ -1553,6 +1779,10 @@ const tabLabelRefs = useRef<Record<ActiveTab, HTMLSpanElement | null>>({
 });
 
 const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
+
+useEffect(() => {
+  setThemes(discoverThemes());
+}, []);
 
   // Load the adversary library from Supabase.
   useEffect(() => {
@@ -2720,8 +2950,8 @@ if (existingIndex >= 0) {
           display: "block",
           width: "100%",
           textAlign: "left",
-          background: disabled ? "#f7f2e7" : "transparent",
-          color: disabled ? "#9a9487" : "#1f3b67",
+          background: disabled ? "var(--theme-panel-soft)" : "transparent",
+          color: disabled ? "var(--theme-text-subtle)" : "var(--theme-text-primary)",
           border: "none",
           padding: "6px 8px",
           borderRadius: 6,
@@ -2729,10 +2959,12 @@ if (existingIndex >= 0) {
           fontSize: 12,
         }}
         onMouseEnter={(e) => {
-          if (!disabled) e.currentTarget.style.background = "#f3e6c7";
+          if (!disabled) e.currentTarget.style.background = "var(--theme-panel-muted)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = disabled ? "#f7f2e7" : "transparent";
+          e.currentTarget.style.background = disabled
+          ? "var(--theme-panel-soft)"
+          : "transparent";
         }}
       >
         {children}
@@ -2749,10 +2981,10 @@ if (existingIndex >= 0) {
     top: "calc(100% + 6px)",
     ...(alignRight ? { right: 0 } : { left: 0 }),
     minWidth: 150,
-    background: "#fffaf0",
-    border: "1px solid #c69a3a",
-    borderRadius: 8,
-    boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
+    background: "var(--theme-panel)",
+    border: "1px solid var(--theme-accent)",
+    borderRadius: 6,
+    boxShadow: "var(--shadow-menu)",
     padding: 4,
     zIndex: 50,
   };
@@ -2766,10 +2998,10 @@ if (existingIndex >= 0) {
       ? { right: "calc(100% + 6px)" }
       : { left: "calc(100% + 6px)" }),
     minWidth: 130,
-    background: "#fffaf0",
-    border: "1px solid #c69a3a",
-    borderRadius: 8,
-    boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
+    background: "var(--theme-panel)",
+    border: "1px solid var(--theme-accent)",
+    borderRadius: 6,
+    boxShadow: "var(--shadow-menu)",
     padding: 4,
     zIndex: 60,
   };
@@ -2797,7 +3029,9 @@ if (existingIndex >= 0) {
         background: "transparent",
         padding: "6px 10px 10px 10px",
         cursor: "pointer",
-        color: active ? "#1f3b67" : "#6b7a99",
+        color: active
+          ? "var(--theme-text-primary)"
+          : "var(--theme-secondary)",
         fontWeight: active ? 800 : 600,
         fontSize: 13,
         letterSpacing: 0.8,
@@ -2839,13 +3073,15 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   padding: "3px 8px",
   borderRadius: 6,
   border: isOpen
-  ? "1px solid #c69a3a"
+  ? "1px solid var(--theme-accent)"
   : "1px solid transparent",
 
 background: isOpen
-  ? "#efe3c9"
+  ? "var(--theme-panel-active)"
   : "transparent",
-  color: isDisabled ? "#b0a58a" : "#24406e",
+  color: isDisabled
+  ? "var(--theme-border-muted)"
+  : "var(--theme-primary-dark)",
   fontWeight: 700,
   cursor: isDisabled ? "not-allowed" : "pointer",
   minHeight: 22,
@@ -2972,10 +3208,11 @@ background: isOpen
 
   return (
     <div
+      className={`theme-${activeTheme}`}
       style={{
         padding: 12,
-        fontFamily: "sans-serif",
-        background: "linear-gradient(180deg, #f7f1e3 0%, #efe4ca 100%)",
+        fontFamily: "var(--theme-ui-font)",
+        background: "var(--theme-app-background)",
         height: "100vh",
         boxSizing: "border-box",
         width: "100%",
@@ -3018,25 +3255,183 @@ background: isOpen
   `}
 </style>
 
-      <h2
+      <div
   style={{
-    margin: "0 0 8px 0",
-    color: "#1f3b67",
-    textAlign: "center",
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+    zIndex: 10000,
   }}
 >
-  Cosmere Stat Blocks
-</h2>
+  <h2
+    style={{
+      margin: 0,
+      color: "var(--theme-text-primary)",
+      textAlign: "center",
+    }}
+  >
+    {appTitle}
+  </h2>
+
+  <div
+  onMouseLeave={() => setThemeMenuOpen(false)}
+  style={{
+    position: "absolute",
+    right: 0,
+    top: "50%",
+    transform: "translateY(-50%)",
+    zIndex: 10001,
+    paddingBottom: 6,
+    paddingLeft: 50,
+    marginLeft: -50,
+  }}
+>
+    <button
+      type="button"
+      title="Change theme"
+      aria-label="Change theme"
+      onClick={() => setThemeMenuOpen((open) => !open)}
+      style={{
+        width: 32,
+        height: 32,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 0,
+        border: "none",
+        background: "transparent",
+        cursor: "pointer",
+        fontSize: 18,
+      }}
+    >
+      <span
+  style={{
+    width: 22,
+    height: 22,
+    borderRadius: "50%",
+    background:
+      "conic-gradient(#e53935, #fb8c00, #fdd835, #43a047, #1e88e5, #8e24aa, #e53935)",
+    display: "block",
+  }}
+/>
+    </button>
+
+    {themeMenuOpen && (
+      <div
+        style={{
+          position: "absolute",
+          top: 38,
+          right: 0,
+          width: 230,
+          padding: 8,
+          display: "grid",
+          gap: 8,
+          background: "var(--theme-panel)",
+          border: "1px solid var(--theme-border)",
+          borderRadius: 8,
+          boxShadow: "var(--shadow-large)",
+          zIndex: 10002,
+        }}
+      >
+        {themes.map((theme) => {
+          const isActive = activeTheme === theme.id;
+
+          return (
+            <button
+              key={theme.id}
+              type="button"
+              onClick={() => {
+                setActiveTheme(theme.id);
+                setThemeMenuOpen(false);
+              }}
+              style={{
+                padding: 0,
+                overflow: "hidden",
+                textAlign: "left",
+                border: isActive
+                  ? `2px solid ${theme.previewPrimary}`
+                  : `1px solid ${theme.previewSecondary}`,
+                borderRadius: 6,
+                background: theme.previewBackground,
+                cursor: "pointer",
+              }}
+            >
+              <div
+                style={{
+                  padding: "7px 9px",
+                  background: theme.previewPrimary,
+                  color: "#fff",
+                  fontWeight: 700,
+                }}
+              >
+                {theme.name}
+              </div>
+
+              <div
+                style={{
+                  padding: "7px 9px",
+                  color: theme.previewPrimary,
+                  fontFamily: "Georgia, serif",
+                  fontSize: 12,
+                }}
+              >
+                <strong>THEME PREVIEW</strong>
+
+                <div
+                  style={{
+                    borderTop: `2px solid ${theme.previewSecondary}`,
+                    marginTop: 4,
+                  }}
+                />
+
+                <div
+                  style={{
+                    marginTop: 5,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 5,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: theme.previewPrimary,
+                    }}
+                  />
+
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: theme.previewSecondary,
+                    }}
+                  />
+
+                  <span>{appTitle}</span>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    )}
+  </div>
+</div>
 
 {statusMessage && (
   <div
     style={{
       marginBottom: 10,
       padding: "6px 10px",
-      border: "1px solid #c69a3a",
-      borderRadius: 6,
-      background: "#fff7df",
-      color: "#1f3b67",
+      border: "1px solid var(--theme-accent)",
+borderRadius: 6,
+background: "var(--theme-warning-background)",
+color: "var(--theme-text-primary)",
       fontSize: 13,
     }}
   >
@@ -3056,10 +3451,10 @@ background: isOpen
     position: "sticky",
     top: 0,
     zIndex: 100,
-    background: "#f7f1e3",
+    background: "var(--theme-background)",
     padding: "12px 16px",
     marginBottom: 12,
-    borderBottom: "1px solid #d8c08a",
+    borderBottom: "1px solid var(--theme-border)",
     boxShadow: openMenu ? "0 4px 10px rgba(0,0,0,0.06)" : "0 2px 6px rgba(0,0,0,0.04)",
     overflow: "visible",
     width: "100%",
@@ -3136,7 +3531,7 @@ background: isOpen
     width: tabIndicator.width,
     height: 4,
     borderRadius: 3,
-    background: "#c69a3a",
+    background: "var(--theme-accent)",
     transition: "left 0.22s ease, width 0.22s ease",
     pointerEvents: "none",
   }}
@@ -3169,7 +3564,7 @@ background: isOpen
 >
 
       {selection.length > 0 && (
-        <p style={{ marginBottom: 8, color: "#5b5670" }}>
+        <p style={{ marginBottom: 8, color: "var(--theme-text-secondary)" }}>
           Selected tokens: {selection.length}
         </p>
       )}
@@ -3179,10 +3574,10 @@ background: isOpen
           style={{
   marginBottom: 12,
   padding: 14,
-  border: "1px solid #c69a3a",
+  border: "1px solid var(--theme-accent)",
   borderRadius: 12,
-  background: "#fff7df",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+  background: "var(--theme-warning-background)",
+  boxShadow: "var(--shadow-small)",
 }}
         >
           <div style={{ marginBottom: 6 }}>
@@ -3198,9 +3593,9 @@ background: isOpen
     style={{
       padding: "8px 14px",
       borderRadius: 8,
-      border: "1px solid #c69a3a",
-      background: "#fffaf0",
-      color: "#1f3b67",
+      border: "1px solid var(--theme-accent)",
+      background: "var(--theme-panel)",
+      color: "var(--theme-text-primary)",
       fontWeight: 700,
       cursor: "pointer",
       fontSize: 14,
@@ -3215,9 +3610,9 @@ background: isOpen
     style={{
       padding: "8px 14px",
       borderRadius: 8,
-      border: "1px solid #1f3b67",
-      background: "#1f3b67",
-      color: "#fffaf0",
+      border: "1px solid var(--theme-primary)",
+      background: "var(--theme-primary)",
+      color: "var(--theme-text-on-accent)",
       fontWeight: 700,
       cursor: "pointer",
       fontSize: 14,
@@ -3240,9 +3635,9 @@ background: isOpen
       <div
         style={{
           padding: 12,
-          border: "1px solid #c69a3a",
+          border: "1px solid var(--theme-accent)",
           borderRadius: 8,
-          background: "#fffaf0",
+          background: "var(--theme-panel)",
         }}
       >
         No adversary selected yet.
@@ -3255,11 +3650,11 @@ background: isOpen
   <div style={{ animation: "fadeIn 0.18s ease" }}>
     <div
       style={{
-        border: "1px solid #c69a3a",
+        border: "1px solid var(--theme-accent)",
         borderTop: "none",
         borderRadius: 8,
         padding: 12,
-        background: "#fffaf0",
+        background: "var(--theme-panel)",
       }}
     >
           <div
@@ -3267,10 +3662,10 @@ background: isOpen
     position: "sticky",
     top: 0,
     zIndex: 3,
-    background: "#fffaf0",
+    background: "var(--theme-panel)",
     margin: "-12px -12px 0",
   padding: "12px 12px 10px",
-  borderTop: "1px solid #c69a3a",
+  borderTop: "1px solid var(--theme-accent)",
   borderRadius: "8px 8px 0 0",
   }}
 >
@@ -3292,7 +3687,7 @@ background: isOpen
       style={{
         width: "100%",
         padding: "6px 32px 6px 8px",
-        border: "1px solid #c69a3a",
+        border: "1px solid var(--theme-accent)",
         borderRadius: 4,
         fontSize: 14,
         boxSizing: "border-box",
@@ -3315,7 +3710,7 @@ background: isOpen
           padding: 0,
           border: "none",
           background: "transparent",
-          color: "#5b5670",
+          color: "var(--theme-text-secondary)",
           fontSize: 20,
           lineHeight: "20px",
           cursor: "pointer",
@@ -3328,7 +3723,12 @@ background: isOpen
 
   {/* Filter button and dropdown */}
 <div
-  style={{ position: "relative" }}
+  style={{
+  position: "relative",
+  paddingLeft: 50,
+  marginLeft: -50,
+  paddingBottom: 6,
+}}
   onMouseLeave={() => setLibraryFiltersOpen(false)}
 >
   <button
@@ -3343,14 +3743,14 @@ background: isOpen
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      border: "1px solid #c69a3a",
+      border: "1px solid var(--theme-accent)",
       borderRadius: 6,
       background:
         libraryTierFilters.length > 0 ||
         libraryTypeFilters.length > 0 ||
         librarySettingFilters.length > 0 ||
         librarySourceFilters.length > 0
-          ? "#1f3b67"
+          ? "var(--theme-primary)"
           : "#fff",
       color:
         libraryTierFilters.length > 0 ||
@@ -3358,7 +3758,7 @@ background: isOpen
         librarySettingFilters.length > 0 ||
         librarySourceFilters.length > 0
           ? "#fff"
-          : "#1f3b67",
+          : "var(--theme-text-primary)",
       cursor: "pointer",
     }}
   >
@@ -3383,12 +3783,12 @@ background: isOpen
         top: "calc(100%)",
         right: 0,
         zIndex: 20,
-        width: 260,
+        width: 135,
         padding: 12,
-        border: "1px solid #c69a3a",
+        border: "1px solid var(--theme-accent)",
         borderRadius: 8,
-        background: "#fffaf0",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.18)",
+        background: "var(--theme-panel)",
+        boxShadow: "var(--shadow-large)",
         boxSizing: "border-box",
       }}
     >
@@ -3402,7 +3802,7 @@ background: isOpen
     padding: "4px 0",
     border: "none",
     background: "transparent",
-    color: "#1f3b67",
+    color: "var(--theme-text-primary)",
     fontSize: 13,
     fontWeight: 700,
     cursor: "pointer",
@@ -3417,7 +3817,15 @@ background: isOpen
     {libraryTierFilters.length > 0 &&
       ` (${libraryTierFilters.length})`}
   </span>
-  <span>{libraryTierOpen ? "▼" : "▶"}</span>
+  <span
+  style={{
+    display: "inline-block",
+    transition: "transform 0.2s ease",
+    transform: libraryTierOpen ? "rotate(90deg)" : "rotate(0deg)",
+  }}
+>
+  ▶
+</span>
 </button>
 
 {libraryTierOpen && (
@@ -3442,7 +3850,7 @@ background: isOpen
             alignItems: "center",
             gap: 7,
             padding: "3px 2px",
-            color: "#1f3b67",
+            color: "var(--theme-text-primary)",
             fontSize: 12,
             cursor: "pointer",
           }}
@@ -3474,7 +3882,7 @@ background: isOpen
     padding: "4px 0",
     border: "none",
     background: "transparent",
-    color: "#1f3b67",
+    color: "var(--theme-text-primary)",
     fontSize: 13,
     fontWeight: 700,
     cursor: "pointer",
@@ -3489,7 +3897,15 @@ background: isOpen
     {libraryTypeFilters.length > 0 &&
       ` (${libraryTypeFilters.length})`}
   </span>
-  <span>{libraryTypeOpen ? "▼" : "▶"}</span>
+  <span
+  style={{
+    display: "inline-block",
+    transition: "transform 0.2s ease",
+    transform: libraryTypeOpen ? "rotate(90deg)" : "rotate(0deg)",
+  }}
+>
+  ▶
+</span>
 </button>
 
 {libraryTypeOpen && (
@@ -3514,7 +3930,7 @@ background: isOpen
             alignItems: "center",
             gap: 7,
             padding: "3px 2px",
-            color: "#1f3b67",
+            color: "var(--theme-text-primary)",
             fontSize: 12,
             cursor: "pointer",
           }}
@@ -3546,7 +3962,7 @@ background: isOpen
           padding: "4px 0",
           border: "none",
           background: "transparent",
-          color: "#1f3b67",
+          color: "var(--theme-text-primary)",
           fontSize: 13,
           fontWeight: 700,
           cursor: "pointer",
@@ -3561,7 +3977,15 @@ background: isOpen
           {librarySettingFilters.length > 0 &&
             ` (${librarySettingFilters.length})`}
         </span>
-        <span>{librarySettingOpen ? "▼" : "▶"}</span>
+        <span
+  style={{
+    display: "inline-block",
+    transition: "transform 0.2s ease",
+    transform: librarySettingOpen ? "rotate(90deg)" : "rotate(0deg)",
+  }}
+>
+  ▶
+</span>
       </button>
 
       {librarySettingOpen && (
@@ -3587,7 +4011,7 @@ background: isOpen
                     alignItems: "center",
                     gap: 7,
                     padding: "3px 2px",
-                    color: "#1f3b67",
+                    color: "var(--theme-text-primary)",
                     fontSize: 12,
                     cursor: "pointer",
                   }}
@@ -3620,7 +4044,7 @@ background: isOpen
           padding: "4px 0",
           border: "none",
           background: "transparent",
-          color: "#1f3b67",
+          color: "var(--theme-text-primary)",
           fontSize: 13,
           fontWeight: 700,
           cursor: "pointer",
@@ -3635,7 +4059,15 @@ background: isOpen
           {librarySourceFilters.length > 0 &&
             ` (${librarySourceFilters.length})`}
         </span>
-        <span>{librarySourceOpen ? "▼" : "▶"}</span>
+        <span
+  style={{
+    display: "inline-block",
+    transition: "transform 0.2s ease",
+    transform: librarySourceOpen ? "rotate(90deg)" : "rotate(0deg)",
+  }}
+>
+  ▶
+</span>
       </button>
 
       {librarySourceOpen && (
@@ -3659,7 +4091,7 @@ background: isOpen
                   alignItems: "center",
                   gap: 7,
                   padding: "3px 2px",
-                  color: "#1f3b67",
+                  color: "var(--theme-text-primary)",
                   fontSize: 12,
                   cursor: "pointer",
                 }}
@@ -3697,9 +4129,9 @@ background: isOpen
             marginTop: 12,
             padding: "6px 8px",
             border: "none",
-            borderTop: "1px solid #d8c08a",
+            borderTop: "1px solid var(--theme-border)",
             background: "transparent",
-            color: "#5b5670",
+            color: "var(--theme-text-secondary)",
             cursor: "pointer",
           }}
         >
@@ -3742,8 +4174,8 @@ background: isOpen
                     onClick={() => jumpToLetter(letter)}
                     style={{
                       border: "none",
-                      background: activeLetter === letter ? "#1f3b67" : "transparent",
-                      color: activeLetter === letter ? "#fff" : "#1f3b67",
+                      background: activeLetter === letter ? "var(--theme-primary)" : "transparent",
+                      color: activeLetter === letter ? "var(--theme-text-on-accent)" : "var(--theme-text-primary)",
                       cursor: "pointer",
                       padding: "0",
                       width: 16,
@@ -3778,11 +4210,13 @@ background: isOpen
                     style={{
   border:
     selectedLibraryId === entry.id
-      ? "2px solid #1f3b67"
-      : "1px solid #d8c08a",
+      ? "2px solid var(--theme-primary)"
+      : "1px solid var(--theme-border)",
   borderRadius: 8,
   padding: "10px 12px",
-  background: selectedLibraryId === entry.id ? "#fff7df" : "#fff",
+  background: selectedLibraryId === entry.id
+  ? "var(--theme-warning-background)"
+  : "var(--theme-panel)",
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
@@ -3800,7 +4234,7 @@ background: isOpen
                     <div style={{ minWidth: 100, flex: 1, lineHeight: 1.2, paddingRight: 4 }}>                      <div
                         style={{
                           fontWeight: "bold",
-                          color: "#1f3b67",
+                          color: "var(--theme-text-primary)",
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
@@ -3810,7 +4244,7 @@ background: isOpen
                       </div>
                       <div
                         style={{
-                          color: "#5b5670",
+                          color: "var(--theme-text-secondary)",
                           fontSize: 13,
                           whiteSpace: "nowrap",
                           overflow: "hidden",
@@ -3839,7 +4273,7 @@ background: isOpen
                           setActiveTab("preview");
                         }}
                         style={iconButtonStyle}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "#f3e6c7")}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--theme-panel-muted)")}
                         onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -3860,7 +4294,7 @@ background: isOpen
                           setActiveTab("builder");
                         }}
                         style={iconButtonStyle}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "#f3e6c7")}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--theme-panel-muted)")}
                         onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -3887,7 +4321,7 @@ background: isOpen
                           attachAdversaryData(entry.data);
                         }}
                         style={iconButtonStyle}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "#f3e6c7")}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--theme-panel-muted)")}
                         onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                         disabled={selection.length === 0}
                       >
@@ -3934,7 +4368,7 @@ background: isOpen
                           setStatusMessage("Library entry deleted.");
                         }}
                         style={iconButtonStyle}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "#f3e6c7")}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--theme-panel-muted)")}
                         onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -3956,13 +4390,16 @@ background: isOpen
       )}
 
       {activeTab === "builder" && (
-  <div style={{ animation: "fadeIn 0.18s ease" }}>
+  <div
+  data-builder-root="true"
+  style={{ animation: "fadeIn 0.18s ease" }}
+>
     <div
           style={{
-            border: "1px solid #c69a3a",
+            border: "1px solid var(--theme-accent)",
             borderRadius: 8,
             padding: 12,
-            background: "#fffaf0",
+            background: "var(--theme-panel)",
           }}
         >
           <BuilderCard>
@@ -3971,11 +4408,13 @@ background: isOpen
     <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
       <BuilderChoiceRow label="Source">
         <BuilderChoiceButton
+          compact
           label="Official"
           active={(builderAdversary.source ?? "Official") === "Official"}
           onClick={() => updateBuilderSource("Official")}
         />
         <BuilderChoiceButton
+          compact
           label="Homebrew"
           active={builderAdversary.source === "Homebrew"}
           onClick={() => updateBuilderSource("Homebrew")}
@@ -3985,6 +4424,7 @@ background: isOpen
       <BuilderChoiceRow label="Setting">
   {LIBRARY_SETTINGS.map((setting) => (
     <BuilderChoiceButton
+      compact
       key={setting}
       label={setting}
       active={(builderAdversary.setting ?? "Stormlight") === setting}
@@ -3993,6 +4433,7 @@ background: isOpen
   ))}
 
   <BuilderChoiceButton
+    compact
     label="Other"
     active={
       Boolean(builderAdversary.setting) &&
@@ -4026,6 +4467,7 @@ background: isOpen
 
       <BuilderLabeledInput
   label="Name"
+  labelWidth={76}
   value={builderAdversary.name}
   onChange={(value) => {
     setSelectedLibraryId(null);
@@ -4079,6 +4521,7 @@ background: isOpen
 
 <BuilderLabeledInput
   label="Species"
+  labelWidth={76}
   value={builderAdversary.species || "Humanoid"}
   onChange={(v) =>
     setBuilderAdversary((prev) => ({ ...prev, species: v }))
@@ -4092,7 +4535,7 @@ background: isOpen
           <details open>
             <SectionSummary title="STATS" />
             <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10, marginBottom: 12 }}>
-              <div style={{ border: "1px solid #c69a3a", borderRadius: 6, padding: 8 }}>
+              <div style={{ border: "1px solid var(--theme-accent)", borderRadius: 6, padding: 8 }}>
                 <div style={{ fontWeight: "bold", marginBottom: 8, textAlign: "center" }}>PHYSICAL</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, auto)", gap: 8, justifyContent: "center" }}>
                   <div style={{ textAlign: "center" }}>
@@ -4123,7 +4566,7 @@ background: isOpen
                 </div>
               </div>
 
-              <div style={{ border: "1px solid #c69a3a", borderRadius: 6, padding: 8 }}>
+              <div style={{ border: "1px solid var(--theme-accent)", borderRadius: 6, padding: 8 }}>
                 <div style={{ fontWeight: "bold", marginBottom: 8, textAlign: "center" }}>COGNITIVE</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, auto)", gap: 8, justifyContent: "center" }}>
                   <div style={{ textAlign: "center" }}>
@@ -4154,7 +4597,7 @@ background: isOpen
                 </div>
               </div>
 
-              <div style={{ border: "1px solid #c69a3a", borderRadius: 6, padding: 8 }}>
+              <div style={{ border: "1px solid var(--theme-accent)", borderRadius: 6, padding: 8 }}>
                 <div style={{ fontWeight: "bold", marginBottom: 8, textAlign: "center" }}>SPIRITUAL</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, auto)", gap: 8, justifyContent: "center" }}>
                   <div style={{ textAlign: "center" }}>
@@ -4186,79 +4629,103 @@ background: isOpen
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, auto)", gap: 12, marginBottom: 12 }}>
-              <div>
-                <div>Health</div>
-                <div
-                  style={{
-                    width: 56,
-                    padding: "4px 6px",
-                    fontSize: 14,
-                    fontWeight: "bold",
-                    textAlign: "center",
-                    boxSizing: "border-box",
-                  }}
-                >
-                  {builderAdversary.minHealth != null &&
-                  builderAdversary.maxHealth != null
-                    ? Math.round(
-                        (builderAdversary.minHealth + builderAdversary.maxHealth) / 2
-                      )
-                    : builderAdversary.health ?? 0}
-                </div>
-              </div>
-              <div>
-                <div>Focus</div>
-                <BuilderNumberInput
-                  value={builderAdversary.focus}
-                  onChange={(value) => {
-                    setSelectedLibraryId(null);
-                    setBuilderAdversary((prev) => ({ ...prev, focus: value }));
-                  }}
-                />
-              </div>
-              <div>
-                <div>Investiture</div>
-                <BuilderNumberInput
-                  value={builderAdversary.investiture}
-                  onChange={(value) => {
-                    setSelectedLibraryId(null);
-                    setBuilderAdversary((prev) => ({ ...prev, investiture: value }));
-                  }}
-                />
-              </div>
-            </div>
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr 1fr",
+    gap: 16,
+    alignItems: "start",
+    marginBottom: 12,
+  }}
+>
+  {/* HEALTH */}
+  <div style={{ textAlign: "center" }}>
+    <div
+      style={{
+        fontWeight: 600,
+        marginBottom: 6,
+      }}
+    >
+      Health
+    </div>
 
-            <div
-              style={{
-                display: "flex",
-                gap: 12,
-                alignItems: "center",
-              }}
-            >
-              <div>
-                <div>Min Health</div>
-                <BuilderNumberInput
-                  value={builderAdversary.minHealth}
-                  onChange={(value) => {
-                    setSelectedLibraryId(null);
-                    setHealthRange("minHealth", value);
-                  }}
-                />
-              </div>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        gap: 8,
+      }}
+    >
+      <div>
+        <div style={{ fontSize: 12, marginBottom: 3 }}>MIN</div>
+        <BuilderNumberInput
+          value={builderAdversary.minHealth}
+          onChange={(value) => {
+            setSelectedLibraryId(null);
+            setHealthRange("minHealth", value);
+          }}
+        />
+      </div>
 
-              <div>
-                <div>Max Health</div>
-                <BuilderNumberInput
-                  value={builderAdversary.maxHealth}
-                  onChange={(value) => {
-                    setSelectedLibraryId(null);
-                    setHealthRange("maxHealth", value);
-                  }}
-                />
-              </div>
-            </div>
-          </details>
+      <div>
+        <div style={{ fontSize: 12, marginBottom: 3 }}>MAX</div>
+        <BuilderNumberInput
+          value={builderAdversary.maxHealth}
+          onChange={(value) => {
+            setSelectedLibraryId(null);
+            setHealthRange("maxHealth", value);
+          }}
+        />
+      </div>
+    </div>
+  </div>
+
+  {/* FOCUS */}
+  <div style={{ textAlign: "center" }}>
+    <div
+      style={{
+        fontWeight: 600,
+        marginBottom: 21,
+      }}
+    >
+      Focus
+    </div>
+
+    <BuilderNumberInput
+      value={builderAdversary.focus}
+      onChange={(value) => {
+        setSelectedLibraryId(null);
+        setBuilderAdversary((prev) => ({
+          ...prev,
+          focus: value,
+        }));
+      }}
+    />
+  </div>
+
+  {/* INVESTITURE */}
+  <div style={{ textAlign: "center" }}>
+    <div
+      style={{
+        fontWeight: 600,
+        marginBottom: 21,
+      }}
+    >
+      Investiture
+    </div>
+
+    <BuilderNumberInput
+      value={builderAdversary.investiture}
+      onChange={(value) => {
+        setSelectedLibraryId(null);
+        setBuilderAdversary((prev) => ({
+          ...prev,
+          investiture: value,
+        }));
+      }}
+    />
+  </div>
+</div>          </details>
           </BuilderCard>
 
           <BuilderCard>
@@ -4436,10 +4903,10 @@ background: isOpen
     onClick={() => setCommonFeaturesOpen((prev) => !prev)}
     style={{
       padding: "6px 10px",
-      border: "1px solid #c69a3a",
+      border: "1px solid var(--theme-accent)",
       borderRadius: 6,
-      background: "#fffaf0",
-      color: "#1f3b67",
+      background: "var(--theme-panel)",
+      color: "var(--theme-text-primary)",
       fontWeight: 600,
       cursor: "pointer",
       fontSize: 12,
@@ -4463,9 +4930,9 @@ background: isOpen
     <div
       style={{
         marginTop: 6,
-        border: "1px solid #c69a3a",
+        border: "1px solid var(--theme-accent)",
         borderRadius: 6,
-        background: "#fff",
+        background: "var(--theme-panel)",
         padding: 8,
         maxHeight: 220,
         overflowY: "auto",
@@ -4475,7 +4942,7 @@ background: isOpen
         <div
           style={{
             fontSize: 12,
-            color: "#6b7280",
+            color: "var(--theme-text-muted)",
             padding: 4,
           }}
         >
@@ -4494,7 +4961,7 @@ background: isOpen
         gap: 7,
         padding: "5px 4px",
         fontSize: 13,
-        color: "#1f3b67",
+        color: "var(--theme-text-primary)",
       }}
     >
       {editingCommonFeatureId === feature.id ? (
@@ -4515,7 +4982,7 @@ background: isOpen
             style={{
               width: "100%",
               padding: "6px 8px",
-              border: "1px solid #c69a3a",
+              border: "1px solid var(--theme-accent)",
               borderRadius: 4,
               fontSize: 13,
               boxSizing: "border-box",
@@ -4532,7 +4999,7 @@ background: isOpen
             style={{
               width: "100%",
               padding: "6px 8px",
-              border: "1px solid #c69a3a",
+              border: "1px solid var(--theme-accent)",
               borderRadius: 4,
               fontSize: 13,
               boxSizing: "border-box",
@@ -4552,10 +5019,10 @@ background: isOpen
               onClick={cancelEditingCommonFeature}
               style={{
                 padding: "4px 8px",
-                border: "1px solid #d8c08a",
+                border: "1px solid var(--theme-border)",
                 borderRadius: 5,
-                background: "#fff",
-                color: "#1f3b67",
+                background: "var(--theme-panel)",
+                color: "var(--theme-text-primary)",
                 cursor: "pointer",
                 fontSize: 11,
               }}
@@ -4568,10 +5035,10 @@ background: isOpen
               onClick={saveCommonFeatureEdit}
               style={{
                 padding: "4px 8px",
-                border: "1px solid #c69a3a",
+                border: "1px solid var(--theme-accent)",
                 borderRadius: 5,
-                background: "#fffaf0",
-                color: "#1f3b67",
+                background: "var(--theme-panel)",
+                color: "var(--theme-text-primary)",
                 cursor: "pointer",
                 fontWeight: 600,
                 fontSize: 11,
@@ -4609,7 +5076,7 @@ background: isOpen
             <span
               style={{
                 fontSize: 10,
-                color: "#6b7280",
+                color: "var(--theme-text-muted)",
               }}
             >
               {feature.source}
@@ -4626,7 +5093,7 @@ background: isOpen
                   border: "none",
                   background: "transparent",
                   padding: "2px 4px",
-                  color: "#1f3b67",
+                  color: "var(--theme-text-primary)",
                   cursor: "pointer",
                   fontSize: 11,
                   textDecoration: "underline",
@@ -4644,7 +5111,7 @@ background: isOpen
                   border: "none",
                   background: "transparent",
                   padding: "2px 4px",
-                  color: "#9b2c2c",
+                  color: "var(--status-danger)",
                   cursor: "pointer",
                   fontSize: 11,
                   textDecoration: "underline",
@@ -4664,7 +5131,7 @@ background: isOpen
               justifyContent: "flex-end",
               marginTop: 8,
               paddingTop: 8,
-              borderTop: "1px solid #e5e7eb",
+              borderTop: "1px solid var(--disabled-border)",
             }}
           >
             <button
@@ -4673,16 +5140,16 @@ background: isOpen
               disabled={selectedCommonFeatureIds.length === 0}
               style={{
                 padding: "5px 10px",
-                border: "1px solid #c69a3a",
+                border: "1px solid var(--theme-accent)",
                 borderRadius: 6,
                 background:
                   selectedCommonFeatureIds.length === 0
-                    ? "#f3f4f6"
-                    : "#fffaf0",
+                    ? "var(--disabled-background)"
+                    : "var(--theme-panel)",
                 color:
                   selectedCommonFeatureIds.length === 0
-                    ? "#9ca3af"
-                    : "#1f3b67",
+                    ? "var(--disabled-text)"
+                    : "var(--theme-text-primary)",
                 fontWeight: 600,
                 cursor:
                   selectedCommonFeatureIds.length === 0
@@ -4737,7 +5204,7 @@ background: isOpen
               style={{
                 width: "100%",
                 padding: "6px 8px",
-                border: "1px solid #c69a3a",
+                border: "1px solid var(--theme-accent)",
                 borderRadius: 4,
                 fontSize: 14,
                 boxSizing: "border-box",
@@ -4777,7 +5244,7 @@ background: isOpen
             style={{
               width: "100%",
               padding: "6px 8px",
-              border: "1px solid #c69a3a",
+              border: "1px solid var(--theme-accent)",
               borderRadius: 4,
               fontSize: 14,
               boxSizing: "border-box",
@@ -4801,7 +5268,7 @@ background: isOpen
                   border: "none",
                   background: "transparent",
                   padding: 0,
-                  color: "#c69a3a",
+                  color: "var(--theme-accent)",
                   cursor: "pointer",
                   fontSize: 12,
                   textDecoration: "underline",
@@ -4817,7 +5284,7 @@ background: isOpen
                   border: "none",
                   background: "transparent",
                   padding: 0,
-                  color: "#7a1f1f",
+                  color: "var(--status-error-text)",
                   cursor: "pointer",
                   fontSize: 12,
                 }}
@@ -4835,10 +5302,10 @@ background: isOpen
         style={{
           justifySelf: "start",
           padding: "4px 10px",
-          border: "1px solid #d8c08a",
+          border: "1px solid var(--theme-border)",
           borderRadius: 6,
-          background: "#fffaf0",
-          color: "#1f3b67",
+          background: "var(--theme-panel)",
+          color: "var(--theme-text-primary)",
           fontWeight: 600,
           cursor: "pointer",
           fontSize: 12,
@@ -4903,157 +5370,189 @@ background: isOpen
           />
         </div>
 
-        <div
+                <div
           style={{
-            marginBottom: 6,
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            gap: 10,
+            gap: 6,
+            width: "100%",
+            marginBottom: 6,
           }}
         >
-  <label>Action Cost</label>
-  <select
-          data-action-cost-index={index}
-            value={
-              action.cost === "free"
-                ? "free"
-                : action.cost === "reaction"
-                ? "reaction"
-                : String(action.cost ?? 1)
-            }
-            onChange={(e) => updateAction(index, "cost", e.target.value)}
-            onKeyDown={(e) => {
-              let newCost: string | null = null;
-
-              if (e.key === "0") {
-                newCost = "free";
-              } else if (e.key === "1") {
-                newCost = "1";
-              } else if (e.key === "2") {
-                newCost = "2";
-              } else if (e.key === "3") {
-                newCost = "3";
-              } else if (e.key.toLowerCase() === "r") {
-                newCost = "reaction";
-              }
-
-              if (newCost !== null) {
-                e.preventDefault();
-                updateAction(index, "cost", newCost);
-                return;
-              }
-
-              if (e.key === "Enter") {
-                e.preventDefault();
-
-                const nextField =
-                  document.querySelector<HTMLInputElement>(
-                    `[data-action-focus-index="${index}"]`
-                  );
-
-                nextField?.focus();
-              }
-            }}
+          <div
             style={{
-              padding: "6px 8px",
-              border: "1px solid #c69a3a",
-              borderRadius: 4,
-              fontSize: 14,
+              fontSize: 12,
+              fontWeight: 700,
+              color: "var(--theme-text-primary)",
+              letterSpacing: 0.4,
+              textTransform: "uppercase",
+              width: 90,
+              flexShrink: 0,
             }}
           >
-            <option value="free">Free</option>
-            <option value="reaction">Reaction</option>
-            <option value="1">1 Action</option>
-            <option value="2">2 Actions</option>
-            <option value="3">3 Actions</option>
-          </select>
+            Action Cost:
+          </div>
+
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <select
+              data-action-cost-index={index}
+              value={
+                action.cost === "free"
+                  ? "free"
+                  : action.cost === "reaction"
+                  ? "reaction"
+                  : String(action.cost ?? 1)
+              }
+              onChange={(e) =>
+                updateAction(index, "cost", e.target.value)
+              }
+              onKeyDown={(e) => {
+                let newCost: string | null = null;
+
+                if (e.key === "0") {
+                  newCost = "free";
+                } else if (e.key === "1") {
+                  newCost = "1";
+                } else if (e.key === "2") {
+                  newCost = "2";
+                } else if (e.key === "3") {
+                  newCost = "3";
+                } else if (e.key.toLowerCase() === "r") {
+                  newCost = "reaction";
+                }
+
+                if (newCost !== null) {
+                  e.preventDefault();
+                  updateAction(index, "cost", newCost);
+                  return;
+                }
+
+                if (e.key === "Enter") {
+                  e.preventDefault();
+
+                  const nextField =
+                    document.querySelector<HTMLInputElement>(
+                      `[data-action-focus-index="${index}"]`
+                    );
+
+                  nextField?.focus();
+                }
+              }}
+              style={{
+                width: "100%",
+                padding: "6px 8px",
+                border: "1px solid var(--theme-accent)",
+                borderRadius: 4,
+                fontSize: 14,
+                boxSizing: "border-box",
+              }}
+            >
+              <option value="free">Free</option>
+              <option value="reaction">Reaction</option>
+              <option value="1">1 Action</option>
+              <option value="2">2 Actions</option>
+              <option value="3">3 Actions</option>
+            </select>
+          </div>
         </div>
 
-        <div style={{ marginBottom: 6 }}>
-  <BuilderTextInput
-  value={action.focusCost ?? ""}
-  placeholder="Focus cost (example: 1)"
-  onChange={(value) => updateAction(index, "focusCost", value)}
-  dataActionFocusIndex={index}
-/>
-</div>
+        <div style={{ display: "grid", gap: 6, marginBottom: 6 }}>
+          <BuilderLabeledInput
+            label="Focus Cost"
+            value={action.focusCost ?? ""}
+            placeholder="e.g. 1"
+            onChange={(value) =>
+              updateAction(index, "focusCost", value)
+            }
+            dataActionFocusIndex={index}
+          />
 
-<div style={{ marginBottom: 6 }}>
-  <BuilderTextInput
-    value={action.investitureCost ?? ""}
-    placeholder="Investiture cost (example: 1)"
-    onChange={(value) => updateAction(index, "investitureCost", value)}
+          <BuilderLabeledInput
+            label="Investiture Cost"
+            value={action.investitureCost ?? ""}
+            placeholder="e.g. 1"
+            onChange={(value) =>
+              updateAction(index, "investitureCost", value)
+            }
+          />
+
+          <BuilderLabeledInput
+            label="Attack Bonus"
+            value={action.attackBonus ?? ""}
+            placeholder="e.g. +6"
+            onChange={(value) =>
+              updateAction(index, "attackBonus", value)
+            }
+          />
+
+          <BuilderLabeledInput
+            label="Reach"
+            value={action.reach ?? ""}
+            placeholder="e.g. 5 ft."
+            onChange={(value) =>
+              updateAction(index, "reach", value)
+            }
+          />
+
+          <BuilderLabeledInput
+            label="Range"
+            value={action.range ?? ""}
+            placeholder="e.g. 150/600 ft."
+            onChange={(value) =>
+              updateAction(index, "range", value)
+            }
+          />
+
+          <BuilderLabeledInput
+            label="Target"
+            value={action.target ?? ""}
+            placeholder="e.g. one target"
+            onChange={(value) =>
+              updateAction(index, "target", value)
+            }
+          />
+
+          <BuilderLabeledInput
+            label="Graze"
+            value={action.graze ?? ""}
+            placeholder="e.g. 2 (1d4) keen damage"
+            onChange={(value) =>
+              updateAction(index, "graze", value)
+            }
+          />
+        </div>
+
+        <div style={{ display: "grid", gap: 6, marginBottom: 6 }}>
+  <BuilderLabeledTextArea
+    label="Hit"
+    value={action.hit ?? ""}
+    placeholder="e.g. 9 (1d4 + 7) keen damage"
+    onChange={(value) =>
+      updateAction(index, "hit", value)
+    }
+    rows={1}
+  />
+
+  <BuilderLabeledTextArea
+    label="Effect"
+    value={action.text ?? ""}
+    placeholder="e.g. Kaiana makes a Knife attack (no action required). On a hit, the target also loses 1 Investiture"
+    onChange={(value) =>
+      updateAction(index, "text", value)
+    }
+    rows={4}
+  />
+
+  <BuilderLabeledTextArea
+    label="Notes"
+    value={action.notes ?? ""}
+    placeholder="e.g. Kaiana only gains this action if she is wielding a raysium knife."
+    onChange={(value) =>
+      updateAction(index, "notes", value)
+    }
+    rows={3}
   />
 </div>
-
-        <div style={{ marginBottom: 6 }}>
-          <BuilderTextInput
-            value={action.attackBonus ?? ""}
-            placeholder="Attack bonus (example: +6)"
-            onChange={(value) => updateAction(index, "attackBonus", value)}
-          />
-        </div>
-
-        <div style={{ marginBottom: 6 }}>
-          <BuilderTextInput
-            value={action.reach ?? ""}
-            placeholder="Reach (example: 5 ft.)"
-            onChange={(value) => updateAction(index, "reach", value)}
-          />
-        </div>
-
-        <div style={{ marginBottom: 6 }}>
-          <BuilderTextInput
-            value={action.range ?? ""}
-            placeholder="Range (example: 150/600 ft.)"
-            onChange={(value) => updateAction(index, "range", value)}
-          />
-        </div>
-
-        <div style={{ marginBottom: 6 }}>
-          <BuilderTextInput
-            value={action.target ?? ""}
-            placeholder="Target (example: one target)"
-            onChange={(value) => updateAction(index, "target", value)}
-          />
-        </div>
-
-        <div style={{ marginBottom: 6 }}>
-          <BuilderTextArea
-            value={action.graze ?? ""}
-            placeholder="Graze text"
-            onChange={(value) => updateAction(index, "graze", value)}
-            rows={2}
-          />
-        </div>
-
-        <div style={{ marginBottom: 6 }}>
-          <BuilderTextArea
-            value={action.hit ?? ""}
-            placeholder="Hit text"
-            onChange={(value) => updateAction(index, "hit", value)}
-            rows={3}
-          />
-        </div>
-
-        <div style={{ marginBottom: 6 }}>
-          <BuilderTextArea
-            value={action.notes ?? ""}
-            placeholder="Notes"
-            onChange={(value) => updateAction(index, "notes", value)}
-            rows={3}
-          />
-        </div>
-
-        <div style={{ marginBottom: 6 }}>
-          <BuilderTextArea
-            value={action.text ?? ""}
-            placeholder="Main action text"
-            onChange={(value) => updateAction(index, "text", value)}
-            rows={4}
-          />
-        </div>
 
         <div
   style={{
@@ -5069,7 +5568,7 @@ background: isOpen
               border: "none",
               background: "transparent",
               padding: 0,
-              color: "#7a1f1f",
+              color: "var(--status-error-text)",
               cursor: "pointer",
               fontSize: 12,
             }}
@@ -5085,10 +5584,10 @@ background: isOpen
         style={{
           justifySelf: "start",
           padding: "4px 10px",
-          border: "1px solid #d8c08a",
+          border: "1px solid var(--theme-border)",
           borderRadius: 6,
-          background: "#fffaf0",
-          color: "#1f3b67",
+          background: "var(--theme-panel)",
+          color: "var(--theme-text-primary)",
           fontWeight: 600,
           cursor: "pointer",
           fontSize: 12,
@@ -5110,27 +5609,7 @@ background: isOpen
         style={{
           fontWeight: 600,
           marginBottom: 4,
-          color: "#1f3b67",
-        }}
-      >
-        Intro
-      </div>
-      <BuilderTextArea
-        value={builderAdversary.opportunitiesAndComplications?.intro ?? ""}
-        onChange={(value) =>
-          updateOpportunitiesAndComplications("intro", value)
-        }
-        placeholder="The following options are available when an enemy gains an Opportunity or Complication during a scene with this adversary:"
-        rows={3}
-      />
-    </div>
-
-    <div>
-      <div
-        style={{
-          fontWeight: 600,
-          marginBottom: 4,
-          color: "#1f3b67",
+          color: "var(--theme-text-primary)",
         }}
       >
         Opportunity
@@ -5150,7 +5629,7 @@ background: isOpen
         style={{
           fontWeight: 600,
           marginBottom: 4,
-          color: "#1f3b67",
+          color: "var(--theme-text-primary)",
         }}
       >
         Complication
@@ -5192,7 +5671,7 @@ background: isOpen
         style={{
           position: "fixed",
           inset: 0,
-          background: "rgba(0, 0, 0, 0.35)",
+          background: "var(--overlay-background)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -5204,12 +5683,12 @@ background: isOpen
           style={{
             width: "100%",
             maxWidth: 320,
-            background: "#fffaf0",
-            border: "2px solid #c69a3a",
+            background: "var(--theme-panel)",
+            border: "2px solid var(--theme-accent)",
             borderRadius: 10,
             padding: 16,
             boxShadow: "0 6px 24px rgba(0,0,0,0.25)",
-            color: "#1f3b67",
+            color: "var(--theme-text-primary)",
           }}
         >
           <div
@@ -5248,10 +5727,10 @@ background: isOpen
               }
               style={{
                 padding: "6px 12px",
-                border: "2px solid #c69a3a",
+                border: "2px solid var(--theme-accent)",
                 borderRadius: 6,
-                background: "#efe3c9",
-                color: "#1f3b67",
+                background: "var(--theme-panel-active)",
+                color: "var(--theme-text-primary)",
                 fontWeight: 700,
                 cursor: "pointer",
               }}
@@ -5266,10 +5745,10 @@ background: isOpen
               }
               style={{
                 padding: "6px 12px",
-                border: "1px solid #d8c08a",
+                border: "1px solid var(--theme-border)",
                 borderRadius: 6,
-                background: "#fffaf0",
-                color: "#1f3b67",
+                background: "var(--theme-panel)",
+                color: "var(--theme-text-primary)",
                 fontWeight: 600,
                 cursor: "pointer",
               }}
@@ -5286,7 +5765,7 @@ background: isOpen
               margin: "0 auto",
               border: "none",
               background: "transparent",
-              color: "#6b7280",
+              color: "var(--theme-text-muted)",
               cursor: "pointer",
               fontSize: 12,
               textDecoration: "underline",
