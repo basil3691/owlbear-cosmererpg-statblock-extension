@@ -2995,7 +2995,7 @@ if (existingIndex >= 0) {
   function getDropdownStyle(alignRight = false): React.CSSProperties {
   return {
     position: "absolute",
-    top: "calc(100% + 6px)",
+    top: "calc(100%)",
     ...(alignRight ? { right: 0 } : { left: 0 }),
     minWidth: 150,
     background: "var(--theme-panel)",
