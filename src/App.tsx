@@ -4163,7 +4163,7 @@ color: "var(--theme-text-primary)",
               <div
                 style={{
                   position: "sticky",
-                  top: 53,
+                  top: 64,
                   alignSelf: "start",
                   zIndex: 2,
                   display: "flex",
