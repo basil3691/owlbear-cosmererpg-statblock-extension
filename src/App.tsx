@@ -1,9 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import OBR from "@owlbear-rodeo/sdk";
+import { createClient } from "@supabase/supabase-js";
+
+const SUPABASE_URL = "https://rjxygozhnslwwmomvzmz.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY =
+  "sb_publishable_bwqFp94KYOA0RvpCgDjYGQ_cn6IbEl2";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 const METADATA_KEY = "com.eli.statblocks/adversary";
-const LIBRARY_STORAGE_KEY = "eli-statblocks-library";
-const LIBRARY_BACKUP_KEY = "eli-statblocks-library-backup";
 
 type ActionCost = "free" | "reaction" | 1 | 2 | 3;
 type ActiveTab = "preview" | "builder" | "library";
@@ -43,6 +48,8 @@ type Adversary = {
 
   health?: number;
   healthRange?: string;
+  minHealth?: number;
+  maxHealth?: number;
   focus?: number;
   investiture?: number;
   deflect?: number | string;
@@ -57,7 +64,7 @@ type Adversary = {
     spiritual?: string[];
   };
 
-  surgeSkills?: string[];
+  investedSkills?: string[];
 
   features?: {
     name: string;
@@ -82,6 +89,13 @@ type LibraryEntry = {
   name: string;
   summary: string;
   data: Adversary;
+};
+
+type FeatureLibraryEntry = {
+  id: string;
+  name: string;
+  text: string;
+  source: "Official" | "Homebrew";
 };
 
 // Structured action data used for rendering. Populated either directly
@@ -231,6 +245,7 @@ const EMPTY_ADVERSARY: Adversary = {
   name: "",
   tier: "",
   type: "",
+  species: "Humanoid",
   source: "Official",
   setting: "Stormlight",
   physical: { str: 0, def: 10, spd: 0 },
@@ -238,19 +253,21 @@ const EMPTY_ADVERSARY: Adversary = {
   spiritual: { awa: 0, def: 10, pre: 0 },
   health: 0,
   healthRange: "",
+  minHealth: 0,
+  maxHealth: 0,
   focus: 0,
   investiture: 0,
-  deflect: "",
+  deflect: "0",
   movement: "",
   senses: "",
-  languages: "",
+  languages: "none",
   immunities: "",
   skills: {
     physical: [],
     cognitive: [],
     spiritual: [],
   },
-  surgeSkills: [],
+  investedSkills: [],
   features: [],
   actions: [],
   opportunitiesAndComplications: {
@@ -263,15 +280,6 @@ const EMPTY_ADVERSARY: Adversary = {
 
 function makeId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function splitLines(text: string): string[] {
-  return text
-    .split("\n")
-}
-
-function joinLines(items?: string[]): string {
-  return (items ?? []).join("\n");
 }
 
 function normalizeName(value: string) {
@@ -600,15 +608,26 @@ function BuilderNumberInput({
 }) {
   return (
     <input
-      type="number"
+      type="text"
+      inputMode="numeric"
       value={value ?? 0}
-      onChange={(e) => onChange(Number(e.target.value))}
+      onFocus={(e) => e.currentTarget.select()}
+      onChange={(e) => {
+        const raw = e.target.value;
+
+        if (!/^-?\d*$/.test(raw)) return;
+        if (raw === "" || raw === "-") return;
+
+        onChange(Number(raw));
+      }}
       style={{
         width,
         padding: "4px 6px",
         border: "1px solid #c69a3a",
         borderRadius: 4,
         fontSize: 14,
+        textAlign: "center",
+        boxSizing: "border-box",
       }}
     />
   );
@@ -619,11 +638,17 @@ function BuilderTextInput({
   onChange,
   placeholder,
   width = "100%",
+  onKeyDown,
+  dataActionIndex,
+  dataActionFocusIndex,
 }: {
   value: string | undefined;
   onChange: (value: string) => void;
   placeholder?: string;
   width?: number | string;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  dataActionIndex?: number;
+  dataActionFocusIndex?: number;
 }) {
   return (
     <input
@@ -631,6 +656,9 @@ function BuilderTextInput({
       value={value ?? ""}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
+      onKeyDown={onKeyDown}
+      data-action-index={dataActionIndex}
+      data-action-focus-index={dataActionFocusIndex}
       style={{
         width,
         padding: "6px 8px",
@@ -640,6 +668,157 @@ function BuilderTextInput({
         boxSizing: "border-box",
       }}
     />
+  );
+}
+
+function BuilderLabeledInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  labelWidth = 90,
+  onKeyDown,
+  dataActionIndex,
+  dataActionFocusIndex,
+}: {
+  label: string;
+  value: string | undefined;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  labelWidth?: number;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  dataActionIndex?: number;
+  dataActionFocusIndex?: number;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        width: "100%",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          color: "#1f3b67",
+          letterSpacing: 0.4,
+          textTransform: "uppercase",
+          width: labelWidth,
+          flexShrink: 0,
+        }}
+      >
+        {label}:
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <BuilderTextInput
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          width="100%"
+          onKeyDown={onKeyDown}
+          dataActionIndex={dataActionIndex}
+          dataActionFocusIndex={dataActionFocusIndex}
+        />
+      </div>
+    </div>
+  );
+}
+
+function BuilderSkillList({
+  values,
+  onChange,
+  addLabel = "Add Skill",
+  listId,
+}: {
+  values: string[] | undefined;
+  onChange: (values: string[]) => void;
+  addLabel?: string;
+  listId: string;
+}) {
+  const displayValues = values && values.length > 0 ? values : [""];
+
+  function updateSkill(index: number, value: string) {
+    const next = [...displayValues];
+    next[index] = value;
+    onChange(next);
+  }
+
+  function addSkill(afterIndex?: number) {
+    const next = [...displayValues];
+
+    const insertIndex =
+      afterIndex === undefined ? next.length : afterIndex + 1;
+
+    next.splice(insertIndex, 0, "");
+    onChange(next);
+
+    requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLInputElement>(
+        `[data-skill-list="${listId}"][data-skill-index="${insertIndex}"]`
+      );
+
+      target?.focus();
+    });
+  }
+
+  function removeBlankSkill(index: number) {
+    if (index === 0) return;
+    if (displayValues[index]?.trim()) return;
+
+    const next = displayValues.filter((_, i) => i !== index);
+    onChange(next);
+  }
+
+  return (
+    <div style={{ display: "grid", gap: 6 }}>
+      {displayValues.map((skill, index) => (
+        <input
+          key={index}
+          type="text"
+          value={skill}
+          data-skill-list={listId}
+          data-skill-index={index}
+          onChange={(e) => updateSkill(index, e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addSkill(index);
+            }
+          }}
+          onBlur={() => removeBlankSkill(index)}
+          style={{
+            width: "100%",
+            padding: "6px 8px",
+            border: "1px solid #c69a3a",
+            borderRadius: 4,
+            fontSize: 14,
+            boxSizing: "border-box",
+          }}
+        />
+      ))}
+
+      <button
+        type="button"
+        onClick={() => addSkill()}
+        style={{
+          justifySelf: "start",
+          padding: "4px 10px",
+          border: "1px solid #d8c08a",
+          borderRadius: 6,
+          background: "#fffaf0",
+          color: "#1f3b67",
+          fontWeight: 600,
+          cursor: "pointer",
+          fontSize: 12,
+        }}
+      >
+        + {addLabel}
+      </button>
+    </div>
   );
 }
 
@@ -719,7 +898,7 @@ function BuilderChoiceRow({
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 10,
+        gap: 6,
         flexWrap: "wrap",
       }}
     >
@@ -730,13 +909,13 @@ function BuilderChoiceRow({
           color: "#1f3b67",
           letterSpacing: 0.4,
           textTransform: "uppercase",
-          minWidth: 70,
+          minWidth: 62,
         }}
       >
         {label}:
       </div>
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
         {children}
       </div>
     </div>
@@ -1106,10 +1285,10 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
           {(adversary.skills?.spiritual ?? []).join(", ") || "—"}
         </p>
 
-        {(adversary.surgeSkills ?? []).length > 0 && (
+        {(adversary.investedSkills ?? []).length > 0 && (
           <p style={{ margin: "4px 0" }}>
-            <strong>Surge Skills:</strong>{" "}
-            {(adversary.surgeSkills ?? []).join(", ")}
+            <strong>Invested Skills:</strong>{" "}
+            {(adversary.investedSkills ?? []).join(", ")}
           </p>
         )}
       </details>
@@ -1286,15 +1465,50 @@ export default function App() {
 
   const [builderAdversary, setBuilderAdversary] = useState<Adversary>(EMPTY_ADVERSARY);
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
-  // The saved-adversary library, persisted to localStorage (see the
-  // load/save effects below). editingLibraryId tracks which entry the
-  // builder is currently modifying vs. creating new.
+ // The adversary library, loaded from Supabase.
+// editingLibraryId tracks which entry the builder is currently
+// modifying vs. creating new.
   const [library, setLibrary] = useState<LibraryEntry[]>([]);
-  const [libraryLoaded, setLibraryLoaded] = useState(false);
+  const [featureLibrary, setFeatureLibrary] = useState<FeatureLibraryEntry[]>([]);
+  const [commonFeaturesOpen, setCommonFeaturesOpen] = useState(false);
+  const [selectedCommonFeatureIds, setSelectedCommonFeatureIds] = useState<string[]>([]);
+  const [editingCommonFeatureId, setEditingCommonFeatureId] = useState<string | null>(null);
+  const [editingCommonFeatureName, setEditingCommonFeatureName] = useState("");
+  const [editingCommonFeatureText, setEditingCommonFeatureText] = useState("");
+
+  const [pendingCommonFeature, setPendingCommonFeature] = useState<{
+  name: string;
+  text: string;
+} | null>(null);
+
   const [selectedLibraryId, setSelectedLibraryId] = useState<string | null>(null);
   const [editingLibraryId, setEditingLibraryId] = useState<string | null>(null);
   const [librarySearch, setLibrarySearch] = useState("");
-  const [activeLetter, setActiveLetter] = useState<string | null>(null);
+
+const LIBRARY_SETTINGS = ["Stormlight", "Mistborn"] as const;
+
+type LibrarySettingFilter =
+  | (typeof LIBRARY_SETTINGS)[number]
+  | "Other";
+
+const [libraryTierFilters, setLibraryTierFilters] = useState<string[]>([]);
+const [libraryTypeFilters, setLibraryTypeFilters] = useState<string[]>([]);
+
+const [librarySettingFilters, setLibrarySettingFilters] = useState<
+  LibrarySettingFilter[]
+>([]);
+
+const [librarySourceFilters, setLibrarySourceFilters] = useState<
+  ("Official" | "Homebrew")[]
+>([]);
+
+const [libraryFiltersOpen, setLibraryFiltersOpen] = useState(false);
+const [libraryTierOpen, setLibraryTierOpen] = useState(false);
+const [libraryTypeOpen, setLibraryTypeOpen] = useState(false);
+const [librarySettingOpen, setLibrarySettingOpen] = useState(false);
+const [librarySourceOpen, setLibrarySourceOpen] = useState(false);
+
+const [activeLetter, setActiveLetter] = useState<string | null>(null);
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [hasLinkedMetadata, setHasLinkedMetadata] = useState(false);
@@ -1340,21 +1554,62 @@ const tabLabelRefs = useRef<Record<ActiveTab, HTMLSpanElement | null>>({
 
 const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
 
-  // One-time load of the saved library on mount. Falls back to an empty
-  // library if localStorage is empty or corrupted.
+  // Load the adversary library from Supabase.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(LIBRARY_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as LibraryEntry[];
-        setLibrary(parsed);
+    async function loadLibrary() {
+      const { data, error } = await supabase
+        .from("adversaries")
+        .select("library_id, name, summary, setting, tier, type, data");
+
+      if (error) {
+        console.error("Could not load adversary library from Supabase:", error);
+        return;
       }
-    } catch {
-      console.warn("Could not load adversary library");
-    } finally {
-      setLibraryLoaded(true);
+
+      const entries: LibraryEntry[] = data.map((row) => ({
+        id: row.library_id,
+        name: row.name,
+        summary: row.summary,
+        data: {
+          ...(row.data as Adversary),
+          setting: row.setting ?? (row.data as Adversary)?.setting,
+        },
+      }));
+
+      setLibrary(entries);
+
+      console.log(`Loaded ${entries.length} adversaries from Supabase.`);
     }
+
+    loadLibrary();
   }, []);
+
+  // Load reusable features from Supabase.
+useEffect(() => {
+  async function loadFeatureLibrary() {
+    const { data, error } = await supabase
+      .from("features")
+      .select("feature_id, name, text, source");
+
+    if (error) {
+      console.error("Could not load feature library from Supabase:", error);
+      return;
+    }
+
+    const entries: FeatureLibraryEntry[] = data.map((row) => ({
+      id: row.feature_id,
+      name: row.name,
+      text: row.text,
+      source: row.source === "Homebrew" ? "Homebrew" : "Official",
+    }));
+
+    setFeatureLibrary(entries);
+
+    console.log(`Loaded ${entries.length} reusable features from Supabase.`);
+  }
+
+  loadFeatureLibrary();
+}, []);
 
   // Measures the active tab label's position/width so the sliding
   // underline bar can animate to it. Recalculated on tab change and window
@@ -1383,24 +1638,6 @@ const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
     window.removeEventListener("resize", updateIndicator);
   };
 }, [activeTab]);
-
-  // Persists the library to localStorage on every change, plus writes a
-  // timestamped backup copy under a separate key as a crude safety net
-  // against a corrupted write clobbering the main save.
-  useEffect(() => {
-  if (!libraryLoaded) return;
-
-  const payload = JSON.stringify(library);
-  localStorage.setItem(LIBRARY_STORAGE_KEY, payload);
-
-  const backup = {
-    savedAt: new Date().toISOString(),
-    count: library.length,
-    library,
-  };
-
-  localStorage.setItem(LIBRARY_BACKUP_KEY, JSON.stringify(backup));
-}, [library, libraryLoaded]);
 
   // Boilerplate OBR startup: wait for the extension to be ready, then
   // track the player's current selection going forward.
@@ -1518,17 +1755,63 @@ const selectedLibraryEntry = useMemo(
 );
 
   const sortedFilteredLibrary = useMemo(() => {
-    return [...library]
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .filter((entry) => {
-        const q = librarySearch.trim().toLowerCase();
-        if (!q) return true;
-        return (
-          entry.name.toLowerCase().includes(q) ||
-          entry.summary.toLowerCase().includes(q)
-        );
-      });
-  }, [library, librarySearch]);
+  return [...library]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .filter((entry) => {
+      const search = librarySearch.trim().toLowerCase();
+
+      const matchesSearch =
+        !search ||
+        entry.name.toLowerCase().includes(search) ||
+        entry.summary.toLowerCase().includes(search);
+
+      const entryTier = entry.data.tier ?? "";
+      const entryType = entry.data.type ?? "";
+      const entrySetting = entry.data.setting ?? "Stormlight";
+      const entrySource = entry.data.source ?? "Official";
+
+      const matchesTier =
+        libraryTierFilters.length === 0 ||
+        libraryTierFilters.includes(entryTier);
+
+      const matchesType =
+      libraryTypeFilters.length === 0 ||
+      libraryTypeFilters.some(
+        (type) => entryType.toLowerCase() === type.toLowerCase()
+      );
+
+const matchesSetting =
+  librarySettingFilters.length === 0 ||
+  librarySettingFilters.some((setting) =>
+    setting === "Other"
+      ? !LIBRARY_SETTINGS.includes(
+          entrySetting as (typeof LIBRARY_SETTINGS)[number]
+        )
+      : entrySetting === setting
+  );
+
+const matchesSource =
+  librarySourceFilters.length === 0 ||
+  librarySourceFilters.includes(
+    entrySource as "Official" | "Homebrew"
+  );
+
+      return (
+        matchesSearch &&
+        matchesTier &&
+        matchesType &&
+        matchesSetting &&
+        matchesSource
+      );
+    });
+}, [
+  library,
+  librarySearch,
+  libraryTierFilters,
+  libraryTypeFilters,
+  librarySettingFilters,
+  librarySourceFilters,
+]);
 
   const availableLetters = useMemo(() => {
     const letters = new Set<string>();
@@ -1661,71 +1944,148 @@ const selectedLibraryEntry = useMemo(
   // none is being edited); "Save As New" (below) always creates a fresh
   // entry even if we're mid-edit of an existing one — used for cloning
   // variants of an adversary.
-  function saveCurrentToLibrary() {
-  const current = builderAdversary;
+    async function saveCurrentToLibrary() {
+    const current = builderAdversary;
 
-  if (!current.name || !current.name.trim()) {
-    setStatusMessage("Please give the adversary a name first.");
-    return;
-  }
-
-  const existingId = editingLibraryId ?? makeId();
-
-  const entry: LibraryEntry = {
-    id: existingId,
-    name: current.name.trim(),
-    summary: makeSummary(current),
-    data: {
-      ...current,
-      actions: normalizeActions(current.actions),
-    },
-  };
-
-  setLibrary((prev) => {
-    const exists = prev.some((x) => x.id === existingId);
-    if (exists) {
-      return prev.map((x) => (x.id === existingId ? entry : x));
+    if (!current.name || !current.name.trim()) {
+      setStatusMessage("Please give the adversary a name first.");
+      return;
     }
-    return [...prev, entry];
-  });
 
-  setEditingLibraryId(entry.id);
-  setSelectedLibraryId(entry.id);
-  setActiveTab("library");
-  setStatusMessage(editingLibraryId ? "Library entry updated." : "Library entry saved.");
-  setOpenMenu(null);
-}
+    const existingId = editingLibraryId ?? makeId();
 
-  function saveAsNewToLibrary() {
-  const current = builderAdversary;
+    const entry: LibraryEntry = {
+      id: existingId,
+      name: current.name.trim(),
+      summary: makeSummary(current),
+      data: {
+        ...current,
+        actions: normalizeActions(current.actions),
+      },
+    };
 
-  if (!current.name || !current.name.trim()) {
-    setStatusMessage("Please give the adversary a name first.");
-    return;
+    const { error } = await supabase
+      .from("adversaries")
+      .upsert(
+        {
+          library_id: entry.id,
+          name: entry.name,
+          summary: entry.summary,
+          setting: entry.data.setting ?? null,
+          tier: entry.data.tier ?? null,
+          type: entry.data.type ?? null,
+          data: entry.data,
+        },
+        {
+          onConflict: "library_id",
+        }
+      );
+
+    if (error) {
+      console.error("Could not save adversary to Supabase:", error);
+      setStatusMessage("Could not save library entry.");
+      return;
+    }
+
+    setLibrary((prev) => {
+      const exists = prev.some((x) => x.id === existingId);
+
+      if (exists) {
+        return prev.map((x) => (x.id === existingId ? entry : x));
+      }
+
+      return [...prev, entry];
+    });
+
+    setEditingLibraryId(entry.id);
+    setSelectedLibraryId(entry.id);
+    setActiveTab("library");
+    setStatusMessage(
+      editingLibraryId ? "Library entry updated." : "Library entry saved."
+    );
+    setOpenMenu(null);
   }
 
-  const entry: LibraryEntry = {
-    id: makeId(),
-    name: current.name.trim(),
-    summary: makeSummary(current),
-    data: {
-      ...current,
-      actions: normalizeActions(current.actions),
-    },
-  };
+    async function saveAsNewToLibrary() {
+    const current = builderAdversary;
 
-  setLibrary((prev) => [...prev, entry]);
-  setEditingLibraryId(entry.id);
-  setSelectedLibraryId(entry.id);
-  setActiveTab("library");
-  setStatusMessage("Saved as new library entry.");
-  setOpenMenu(null);
+    if (!current.name || !current.name.trim()) {
+      setStatusMessage("Please give the adversary a name first.");
+      return;
+    }
+
+    const entry: LibraryEntry = {
+      id: makeId(),
+      name: current.name.trim(),
+      summary: makeSummary(current),
+      data: {
+        ...current,
+        actions: normalizeActions(current.actions),
+      },
+    };
+
+    const { error } = await supabase
+      .from("adversaries")
+      .insert({
+        library_id: entry.id,
+        name: entry.name,
+        summary: entry.summary,
+        setting: entry.data.setting ?? null,
+        tier: entry.data.tier ?? null,
+        type: entry.data.type ?? null,
+        data: entry.data,
+      });
+
+    if (error) {
+      console.error("Could not save new adversary to Supabase:", error);
+      setStatusMessage("Could not save new library entry.");
+      return;
+    }
+
+    setLibrary((prev) => [...prev, entry]);
+    setEditingLibraryId(entry.id);
+    setSelectedLibraryId(entry.id);
+    setActiveTab("library");
+    setStatusMessage("Saved as new library entry.");
+    setOpenMenu(null);
+  }
+
+  function normalizeHealth(adversary: Adversary): Adversary {
+  // New-format entry already has Min/Max Health.
+  if (
+    adversary.minHealth != null &&
+    adversary.maxHealth != null
+  ) {
+    return adversary;
+  }
+
+  // Older entries stored the range as a string such as "32–48".
+  const range = adversary.healthRange?.trim();
+
+  if (range) {
+    const match = range.match(/^\s*(\d+)\s*[-–—]\s*(\d+)\s*$/);
+
+    if (match) {
+      const minHealth = Number(match[1]);
+      const maxHealth = Number(match[2]);
+
+      return {
+        ...adversary,
+        minHealth,
+        maxHealth,
+        health: Math.round((minHealth + maxHealth) / 2),
+      };
+    }
+  }
+
+  // If there is no usable old range, preserve the old Health value.
+  return adversary;
 }
 
   function loadLibraryEntry(entry: LibraryEntry) {
   setSelectedLibraryId(entry.id);
   setEditingLibraryId(entry.id);
-  setBuilderAdversary(entry.data);
+  setBuilderAdversary(normalizeHealth(entry.data));
 }
 
   function startNewBuilderAdversary() {
@@ -1750,41 +2110,85 @@ function updateBuilderSetting(value: string) {
   }));
 }
 
-  function setPhysical<K extends keyof NonNullable<Adversary["physical"]>>(key: K, value: number) {
-    setBuilderAdversary((prev) => ({
+  function setPhysical(
+  key: "str" | "spd",
+  value: number
+) {
+  setBuilderAdversary((prev) => {
+    const str = key === "str" ? value : prev.physical?.str ?? 0;
+    const spd = key === "spd" ? value : prev.physical?.spd ?? 0;
+
+    return {
       ...prev,
       physical: {
-        str: prev.physical?.str ?? 0,
-        def: prev.physical?.def ?? 10,
-        spd: prev.physical?.spd ?? 0,
-        [key]: value,
+        str,
+        spd,
+        def: str + spd + 10,
       },
-    }));
-  }
+    };
+  });
+}
 
-  function setCognitive<K extends keyof NonNullable<Adversary["cognitive"]>>(key: K, value: number) {
-    setBuilderAdversary((prev) => ({
+function setCognitive(
+  key: "int" | "wil",
+  value: number
+) {
+  setBuilderAdversary((prev) => {
+    const int = key === "int" ? value : prev.cognitive?.int ?? 0;
+    const wil = key === "wil" ? value : prev.cognitive?.wil ?? 0;
+
+    return {
       ...prev,
       cognitive: {
-        int: prev.cognitive?.int ?? 0,
-        def: prev.cognitive?.def ?? 10,
-        wil: prev.cognitive?.wil ?? 0,
-        [key]: value,
+        int,
+        wil,
+        def: int + wil + 10,
       },
-    }));
-  }
+    };
+  });
+}
 
-  function setSpiritual<K extends keyof NonNullable<Adversary["spiritual"]>>(key: K, value: number) {
-    setBuilderAdversary((prev) => ({
+function setSpiritual(
+  key: "awa" | "pre",
+  value: number
+) {
+  setBuilderAdversary((prev) => {
+    const awa = key === "awa" ? value : prev.spiritual?.awa ?? 0;
+    const pre = key === "pre" ? value : prev.spiritual?.pre ?? 0;
+
+    return {
       ...prev,
       spiritual: {
-        awa: prev.spiritual?.awa ?? 0,
-        def: prev.spiritual?.def ?? 10,
-        pre: prev.spiritual?.pre ?? 0,
-        [key]: value,
+        awa,
+        pre,
+        def: awa + pre + 10,
       },
-    }));
-  }
+    };
+  });
+}
+
+function setHealthRange(
+  key: "minHealth" | "maxHealth",
+  value: number
+) {
+  setBuilderAdversary((prev) => {
+    const minHealth =
+      key === "minHealth" ? value : prev.minHealth ?? 0;
+
+    const maxHealth =
+      key === "maxHealth" ? value : prev.maxHealth ?? 0;
+
+    const health = Math.round((minHealth + maxHealth) / 2);
+
+    return {
+      ...prev,
+      minHealth,
+      maxHealth,
+      health,
+      healthRange: `${minHealth}–${maxHealth}`,
+    };
+  });
+}
 
   function updateOpportunitiesAndComplications(
   field: "intro" | "opportunity" | "complication",
@@ -1816,12 +2220,225 @@ function updateTactics(value: string) {
     });
   }
 
-  function addFeature() {
-    setBuilderAdversary((prev) => ({
-      ...prev,
-      features: [...(prev.features ?? []), { name: "", text: "" }],
-    }));
+  function addFeature(afterIndex?: number) {
+  const currentFeatures = builderAdversary.features ?? [];
+
+  // Look for an existing completely blank feature,
+  // but do NOT count the feature we're currently leaving.
+  const blankIndex = currentFeatures.findIndex(
+    (feature, index) =>
+      index !== afterIndex &&
+      !feature.name.trim() &&
+      !feature.text.trim()
+  );
+
+  // If another blank feature already exists,
+  // move to that one instead of creating another.
+  if (blankIndex !== -1) {
+    requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLInputElement>(
+        `[data-feature-index="${blankIndex}"]`
+      );
+
+      target?.focus();
+    });
+
+    return;
   }
+
+  // Otherwise create one new blank feature.
+  const insertIndex =
+    afterIndex === undefined
+      ? currentFeatures.length
+      : afterIndex + 1;
+
+  const next = [...currentFeatures];
+
+  next.splice(insertIndex, 0, {
+    name: "",
+    text: "",
+  });
+
+  setBuilderAdversary((prev) => ({
+    ...prev,
+    features: next,
+  }));
+
+  requestAnimationFrame(() => {
+    const target = document.querySelector<HTMLInputElement>(
+      `[data-feature-index="${insertIndex}"]`
+    );
+
+    target?.focus();
+  });
+}
+
+function saveAsCommonFeature(feature: {
+  name: string;
+  text: string;
+}) {
+  const name = feature.name.trim();
+  const text = feature.text.trim();
+
+  if (!name) {
+    setStatusMessage("Please give the feature a name first.");
+    return;
+  }
+
+  setPendingCommonFeature({
+    name,
+    text,
+  });
+}
+
+async function confirmSaveAsCommonFeature(
+  source: "Official" | "Homebrew"
+) {
+  if (!pendingCommonFeature) return;
+
+  const entry: FeatureLibraryEntry = {
+    id: makeId(),
+    name: pendingCommonFeature.name,
+    text: pendingCommonFeature.text,
+    source,
+  };
+
+  const { error } = await supabase
+    .from("features")
+    .insert({
+      feature_id: entry.id,
+      name: entry.name,
+      text: entry.text,
+      source: entry.source,
+    });
+
+  if (error) {
+    console.error("Could not save common feature to Supabase:", error);
+    setStatusMessage("Could not save common feature.");
+    return;
+  }
+
+  setFeatureLibrary((prev) => [...prev, entry]);
+  setPendingCommonFeature(null);
+
+  setStatusMessage(
+    `Saved "${entry.name}" as an ${entry.source} common feature.`
+  );
+}
+
+function startEditingCommonFeature(feature: FeatureLibraryEntry) {
+  setEditingCommonFeatureId(feature.id);
+  setEditingCommonFeatureName(feature.name);
+  setEditingCommonFeatureText(feature.text);
+}
+
+function cancelEditingCommonFeature() {
+  setEditingCommonFeatureId(null);
+  setEditingCommonFeatureName("");
+  setEditingCommonFeatureText("");
+}
+
+async function saveCommonFeatureEdit() {
+  if (!editingCommonFeatureId) return;
+
+  const name = editingCommonFeatureName.trim();
+  const text = editingCommonFeatureText.trim();
+
+  if (!name) {
+    setStatusMessage("Please give the feature a name.");
+    return;
+  }
+
+  const { error } = await supabase
+    .from("features")
+    .update({
+      name,
+      text,
+    })
+    .eq("feature_id", editingCommonFeatureId);
+
+  if (error) {
+    console.error("Could not update common feature:", error);
+    setStatusMessage("Could not update common feature.");
+    return;
+  }
+
+  setFeatureLibrary((prev) =>
+    prev.map((feature) =>
+      feature.id === editingCommonFeatureId
+        ? { ...feature, name, text }
+        : feature
+    )
+  );
+
+  setStatusMessage(`Updated "${name}".`);
+  cancelEditingCommonFeature();
+}
+
+async function deleteCommonFeature(feature: FeatureLibraryEntry) {
+  const confirmed = window.confirm(
+    `Delete "${feature.name}" from Common Features?`
+  );
+
+  if (!confirmed) return;
+
+  const { error } = await supabase
+    .from("features")
+    .delete()
+    .eq("feature_id", feature.id);
+
+  if (error) {
+    console.error("Could not delete common feature:", error);
+    setStatusMessage("Could not delete common feature.");
+    return;
+  }
+
+  setFeatureLibrary((prev) =>
+    prev.filter((item) => item.id !== feature.id)
+  );
+
+  setSelectedCommonFeatureIds((prev) =>
+    prev.filter((id) => id !== feature.id)
+  );
+
+  if (editingCommonFeatureId === feature.id) {
+    cancelEditingCommonFeature();
+  }
+
+  setStatusMessage(`Deleted "${feature.name}".`);
+}
+
+function toggleCommonFeature(id: string) {
+  setSelectedCommonFeatureIds((prev) =>
+    prev.includes(id)
+      ? prev.filter((featureId) => featureId !== id)
+      : [...prev, id]
+  );
+}
+
+function addSelectedCommonFeatures() {
+  const selected = featureLibrary.filter((feature) =>
+    selectedCommonFeatureIds.includes(feature.id)
+  );
+
+  if (selected.length === 0) return;
+
+  setSelectedLibraryId(null);
+
+  setBuilderAdversary((prev) => ({
+    ...prev,
+    features: [
+      ...(prev.features ?? []),
+      ...selected.map((feature) => ({
+        name: feature.name,
+        text: feature.text,
+      })),
+    ],
+  }));
+
+  setSelectedCommonFeatureIds([]);
+  setCommonFeaturesOpen(false);
+}
 
   function removeFeature(index: number) {
     setBuilderAdversary((prev) => ({
@@ -1895,27 +2512,67 @@ function updateTactics(value: string) {
 }
 
   function addAction() {
-    setBuilderAdversary((prev) => ({
-      ...prev,
-      actions: [
-  ...(prev.actions ?? []),
-  {
-    name: "",
-    text: "",
-    cost: 1,
-    focusCost: "",
-    investitureCost: "",
-    attackBonus: "",
-    reach: "",
-    range: "",
-    target: "",
-    graze: "",
-    hit: "",
-    notes: "",
-  },
-],
-    }));
+  const currentActions = builderAdversary.actions ?? [];
+
+  const blankIndex = currentActions.findIndex((action) => {
+    return (
+      !action.name?.trim() &&
+      !action.text?.trim() &&
+      !action.focusCost?.trim() &&
+      !action.investitureCost?.trim() &&
+      !action.attackBonus?.trim() &&
+      !action.reach?.trim() &&
+      !action.range?.trim() &&
+      !action.target?.trim() &&
+      !action.graze?.trim() &&
+      !action.hit?.trim() &&
+      !action.notes?.trim()
+    );
+  });
+
+  if (blankIndex !== -1) {
+    requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLInputElement>(
+        `[data-action-index="${blankIndex}"]`
+      );
+
+      target?.focus();
+    });
+
+    return;
   }
+
+  const insertIndex = currentActions.length;
+
+  setBuilderAdversary((prev) => ({
+    ...prev,
+    actions: [
+      ...(prev.actions ?? []),
+      {
+        name: "",
+        text: "",
+        cost: 1,
+        focusCost: "",
+        investitureCost: "",
+        attackBonus: "",
+        reach: "",
+        range: "",
+        target: "",
+        graze: "",
+        hit: "",
+        notes: "",
+      },
+    ],
+  }));
+
+  requestAnimationFrame(() => {
+    const target = document.querySelector<HTMLInputElement>(
+      `[data-action-index="${insertIndex}"]`
+    );
+
+    target?.focus();
+  });
+}
 
   function removeAction(index: number) {
     setBuilderAdversary((prev) => ({
@@ -2165,7 +2822,13 @@ function renderMenu(menu: Exclude<OpenMenu, null>) {
   const shouldAlignDropdownRight = menu === "library" || menu === "token";
 
   return (
-  <div style={{ position: "relative" }}>
+  <div
+    style={{ position: "relative" }}
+    onMouseLeave={() => {
+      setOpenMenu(null);
+      setOpenSubmenu(null);
+    }}
+  >
       <button
         onClick={() => {
           if (isDisabled) return;
@@ -2313,10 +2976,13 @@ background: isOpen
         padding: 12,
         fontFamily: "sans-serif",
         background: "linear-gradient(180deg, #f7f1e3 0%, #efe4ca 100%)",
-        minHeight: "100%",
+        height: "100vh",
         boxSizing: "border-box",
         width: "100%",
         maxWidth: "100%",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
       }}
     >
       <input
@@ -2493,6 +3159,15 @@ background: isOpen
 </div>
 </div>
 
+<div
+  ref={libraryListRef}
+  style={{
+    flex: 1,
+    minHeight: 0,
+    overflowY: "auto",
+  }}
+>
+
       {selection.length > 0 && (
         <p style={{ marginBottom: 8, color: "#5b5670" }}>
           Selected tokens: {selection.length}
@@ -2581,18 +3256,461 @@ background: isOpen
     <div
       style={{
         border: "1px solid #c69a3a",
+        borderTop: "none",
         borderRadius: 8,
         padding: 12,
         background: "#fffaf0",
       }}
     >
-          <div style={{ marginBottom: 10 }}>
-            <BuilderTextInput
-              value={librarySearch}
-              onChange={setLibrarySearch}
-              placeholder="Search adversaries..."
-            />
-          </div>
+          <div
+  style={{
+    position: "sticky",
+    top: 0,
+    zIndex: 3,
+    background: "#fffaf0",
+    margin: "-12px -12px 0",
+  padding: "12px 12px 10px",
+  borderTop: "1px solid #c69a3a",
+  borderRadius: "8px 8px 0 0",
+  }}
+>
+  <div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) 40px",
+    gap: 8,
+    alignItems: "center",
+  }}
+>
+  {/* Search box */}
+  <div style={{ position: "relative", minWidth: 0 }}>
+    <input
+      type="text"
+      value={librarySearch}
+      onChange={(e) => setLibrarySearch(e.target.value)}
+      placeholder="Search adversaries..."
+      style={{
+        width: "100%",
+        padding: "6px 32px 6px 8px",
+        border: "1px solid #c69a3a",
+        borderRadius: 4,
+        fontSize: 14,
+        boxSizing: "border-box",
+      }}
+    />
+
+    {librarySearch && (
+      <button
+        type="button"
+        onClick={() => setLibrarySearch("")}
+        aria-label="Clear search"
+        title="Clear search"
+        style={{
+          position: "absolute",
+          right: 6,
+          top: "50%",
+          transform: "translateY(-50%)",
+          width: 22,
+          height: 22,
+          padding: 0,
+          border: "none",
+          background: "transparent",
+          color: "#5b5670",
+          fontSize: 20,
+          lineHeight: "20px",
+          cursor: "pointer",
+        }}
+      >
+        ×
+      </button>
+    )}
+  </div>
+
+  {/* Filter button and dropdown */}
+<div
+  style={{ position: "relative" }}
+  onMouseLeave={() => setLibraryFiltersOpen(false)}
+>
+  <button
+    type="button"
+    onClick={() => setLibraryFiltersOpen((open) => !open)}
+    aria-label="Filter adversaries"
+    title="Filter adversaries"
+    style={{
+      width: 40,
+      height: 34,
+      padding: 0,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      border: "1px solid #c69a3a",
+      borderRadius: 6,
+      background:
+        libraryTierFilters.length > 0 ||
+        libraryTypeFilters.length > 0 ||
+        librarySettingFilters.length > 0 ||
+        librarySourceFilters.length > 0
+          ? "#1f3b67"
+          : "#fff",
+      color:
+        libraryTierFilters.length > 0 ||
+        libraryTypeFilters.length > 0 ||
+        librarySettingFilters.length > 0 ||
+        librarySourceFilters.length > 0
+          ? "#fff"
+          : "#1f3b67",
+      cursor: "pointer",
+    }}
+  >
+    <svg
+      width="19"
+      height="19"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 5h16l-6 7v5l-4 2v-7L4 5z" />
+    </svg>
+  </button>
+
+  {libraryFiltersOpen && (
+    <div
+      style={{
+        position: "absolute",
+        top: "calc(100%)",
+        right: 0,
+        zIndex: 20,
+        width: 260,
+        padding: 12,
+        border: "1px solid #c69a3a",
+        borderRadius: 8,
+        background: "#fffaf0",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.18)",
+        boxSizing: "border-box",
+      }}
+    >
+
+      {/* Tier filter */}
+<button
+  type="button"
+  onClick={() => setLibraryTierOpen((open) => !open)}
+  style={{
+    width: "100%",
+    padding: "4px 0",
+    border: "none",
+    background: "transparent",
+    color: "#1f3b67",
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    textAlign: "left",
+  }}
+>
+  <span>
+    Tier
+    {libraryTierFilters.length > 0 &&
+      ` (${libraryTierFilters.length})`}
+  </span>
+  <span>{libraryTierOpen ? "▼" : "▶"}</span>
+</button>
+
+{libraryTierOpen && (
+  <div
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      gap: 4,
+      marginTop: 6,
+      marginBottom: 10,
+      paddingLeft: 4,
+    }}
+  >
+    {["1", "2", "3", "4"].map((tier) => {
+      const checked = libraryTierFilters.includes(tier);
+
+      return (
+        <label
+          key={tier}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 7,
+            padding: "3px 2px",
+            color: "#1f3b67",
+            fontSize: 12,
+            cursor: "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={() => {
+              setLibraryTierFilters((current) =>
+                current.includes(tier)
+                  ? current.filter((item) => item !== tier)
+                  : [...current, tier]
+              );
+            }}
+          />
+          <span>{tier}</span>
+        </label>
+      );
+    })}
+  </div>
+)}
+
+{/* Type filter */}
+<button
+  type="button"
+  onClick={() => setLibraryTypeOpen((open) => !open)}
+  style={{
+    width: "100%",
+    padding: "4px 0",
+    border: "none",
+    background: "transparent",
+    color: "#1f3b67",
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    textAlign: "left",
+  }}
+>
+  <span>
+    Type
+    {libraryTypeFilters.length > 0 &&
+      ` (${libraryTypeFilters.length})`}
+  </span>
+  <span>{libraryTypeOpen ? "▼" : "▶"}</span>
+</button>
+
+{libraryTypeOpen && (
+  <div
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      gap: 4,
+      marginTop: 6,
+      marginBottom: 10,
+      paddingLeft: 4,
+    }}
+  >
+    {["Minion", "Rival", "Boss", "Companion"].map((type) => {
+      const checked = libraryTypeFilters.includes(type);
+
+      return (
+        <label
+          key={type}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 7,
+            padding: "3px 2px",
+            color: "#1f3b67",
+            fontSize: 12,
+            cursor: "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={() => {
+              setLibraryTypeFilters((current) =>
+                current.includes(type)
+                  ? current.filter((item) => item !== type)
+                  : [...current, type]
+              );
+            }}
+          />
+          <span>{type}</span>
+        </label>
+      );
+    })}
+  </div>
+)}
+
+      {/* Setting filter */}
+      <button
+        type="button"
+        onClick={() => setLibrarySettingOpen((open) => !open)}
+        style={{
+          width: "100%",
+          padding: "4px 0",
+          border: "none",
+          background: "transparent",
+          color: "#1f3b67",
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          textAlign: "left",
+        }}
+      >
+        <span>
+          Setting
+          {librarySettingFilters.length > 0 &&
+            ` (${librarySettingFilters.length})`}
+        </span>
+        <span>{librarySettingOpen ? "▼" : "▶"}</span>
+      </button>
+
+      {librarySettingOpen && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+            marginTop: 6,
+            marginBottom: 10,
+            paddingLeft: 4,
+          }}
+        >
+          {([...LIBRARY_SETTINGS, "Other"] as const).map(
+            (setting) => {
+              const checked = librarySettingFilters.includes(setting);
+
+              return (
+                <label
+                  key={setting}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "3px 2px",
+                    color: "#1f3b67",
+                    fontSize: 12,
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => {
+                      setLibrarySettingFilters((current) =>
+                        current.includes(setting)
+                          ? current.filter((item) => item !== setting)
+                          : [...current, setting]
+                      );
+                    }}
+                  />
+                  <span>{setting}</span>
+                </label>
+              );
+            }
+          )}
+        </div>
+      )}
+
+      {/* Source filter */}
+      <button
+        type="button"
+        onClick={() => setLibrarySourceOpen((open) => !open)}
+        style={{
+          width: "100%",
+          padding: "4px 0",
+          border: "none",
+          background: "transparent",
+          color: "#1f3b67",
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          textAlign: "left",
+        }}
+      >
+        <span>
+          Source
+          {librarySourceFilters.length > 0 &&
+            ` (${librarySourceFilters.length})`}
+        </span>
+        <span>{librarySourceOpen ? "▼" : "▶"}</span>
+      </button>
+
+      {librarySourceOpen && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+            marginTop: 6,
+            paddingLeft: 4,
+          }}
+        >
+          {(["Official", "Homebrew"] as const).map((source) => {
+            const checked = librarySourceFilters.includes(source);
+
+            return (
+              <label
+                key={source}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                  padding: "3px 2px",
+                  color: "#1f3b67",
+                  fontSize: 12,
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => {
+                    setLibrarySourceFilters((current) =>
+                      current.includes(source)
+                        ? current.filter((item) => item !== source)
+                        : [...current, source]
+                    );
+                  }}
+                />
+                <span>{source}</span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+
+      {(libraryTierFilters.length > 0 ||
+        libraryTypeFilters.length > 0 ||
+        librarySettingFilters.length > 0 ||
+        librarySourceFilters.length > 0) && (
+        <button
+          type="button"
+          onClick={() => {
+            setLibrarySettingFilters([]);
+            setLibrarySourceFilters([]);
+          }}
+          style={{
+            width: "100%",
+            marginTop: 12,
+            padding: "6px 8px",
+            border: "none",
+            borderTop: "1px solid #d8c08a",
+            background: "transparent",
+            color: "#5b5670",
+            cursor: "pointer",
+          }}
+        >
+          Clear filters
+        </button>
+      )}
+    </div>
+  )}
+</div>
+</div>
+</div>
 
           {sortedFilteredLibrary.length === 0 ? (
             <p style={{ margin: 0 }}>No saved adversaries found.</p>
@@ -2607,6 +3725,10 @@ background: isOpen
             >
               <div
                 style={{
+                  position: "sticky",
+                  top: 53,
+                  alignSelf: "start",
+                  zIndex: 2,
                   display: "flex",
                   flexDirection: "column",
                   gap: 2,
@@ -2623,11 +3745,11 @@ background: isOpen
                       background: activeLetter === letter ? "#1f3b67" : "transparent",
                       color: activeLetter === letter ? "#fff" : "#1f3b67",
                       cursor: "pointer",
-                      padding: "2px 0",
+                      padding: "0",
                       width: 16,
-                      height: 18,
-                      borderRadius: 4,
-                      fontSize: 10,
+                      height: 13,
+                      borderRadius: 3,
+                      fontSize: 9,
                       fontWeight: activeLetter === letter ? 700 : 500,
                       lineHeight: 1,
                     }}
@@ -2638,12 +3760,9 @@ background: isOpen
               </div>
 
               <div
-                ref={libraryListRef}
                 style={{
   display: "grid",
   gap: 10,
-  maxHeight: 520,
-  overflowY: "auto",
   paddingRight: 8,
   minWidth: 130,
   boxSizing: "border-box",
@@ -2785,19 +3904,34 @@ background: isOpen
 
                       <button
                         title="Delete"
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
+
                           const confirmed = window.confirm(`Delete ${entry.name}?`);
                           if (!confirmed) return;
 
+                          const { error } = await supabase
+                            .from("adversaries")
+                            .delete()
+                            .eq("library_id", entry.id);
+
+                          if (error) {
+                            console.error("Could not delete adversary from Supabase:", error);
+                            setStatusMessage("Could not delete library entry.");
+                            return;
+                          }
+
                           setLibrary((prev) => prev.filter((x) => x.id !== entry.id));
 
-                          if (selectedLibraryId === entry.id) setSelectedLibraryId(null);
-                          if (editingLibraryId === entry.id) setEditingLibraryId(null);
+                          if (selectedLibraryId === entry.id) {
+                            setSelectedLibraryId(null);
+                          }
+
+                          if (editingLibraryId === entry.id) {
+                            setEditingLibraryId(null);
+                          }
 
                           setStatusMessage("Library entry deleted.");
-
-                          if (editingLibraryId === entry.id) setEditingLibraryId(null);
                         }}
                         style={iconButtonStyle}
                         onMouseEnter={(e) => (e.currentTarget.style.background = "#f3e6c7")}
@@ -2849,74 +3983,90 @@ background: isOpen
       </BuilderChoiceRow>
 
       <BuilderChoiceRow label="Setting">
-        <BuilderChoiceButton
-          label="Stormlight"
-          active={(builderAdversary.setting ?? "Stormlight") === "Stormlight"}
-          onClick={() => updateBuilderSetting("Stormlight")}
-        />
-        <BuilderChoiceButton
-          label="Mistborn"
-          active={builderAdversary.setting === "Mistborn"}
-          onClick={() => updateBuilderSetting("Mistborn")}
-        />
-        <BuilderChoiceButton
-          label="Other"
-          active={
-            Boolean(builderAdversary.setting) &&
-            builderAdversary.setting !== "Stormlight" &&
-            builderAdversary.setting !== "Mistborn"
-          }
-          onClick={() => {
-            if (
-              !builderAdversary.setting ||
-              builderAdversary.setting === "Stormlight" ||
-              builderAdversary.setting === "Mistborn"
-            ) {
-              updateBuilderSetting("");
-            }
-          }}
-        />
+  {LIBRARY_SETTINGS.map((setting) => (
+    <BuilderChoiceButton
+      key={setting}
+      label={setting}
+      active={(builderAdversary.setting ?? "Stormlight") === setting}
+      onClick={() => updateBuilderSetting(setting)}
+    />
+  ))}
+
+  <BuilderChoiceButton
+    label="Other"
+    active={
+      Boolean(builderAdversary.setting) &&
+      !LIBRARY_SETTINGS.includes(
+        builderAdversary.setting as (typeof LIBRARY_SETTINGS)[number]
+      )
+    }
+    onClick={() => {
+      if (
+        !builderAdversary.setting ||
+        LIBRARY_SETTINGS.includes(
+          builderAdversary.setting as (typeof LIBRARY_SETTINGS)[number]
+        )
+      ) {
+        updateBuilderSetting("");
+      }
+    }}
+  />
+</BuilderChoiceRow>
+
+{!LIBRARY_SETTINGS.includes(
+  (builderAdversary.setting ?? "Stormlight") as
+    (typeof LIBRARY_SETTINGS)[number]
+) && (
+  <BuilderTextInput
+    value={builderAdversary.setting}
+    placeholder="Custom setting"
+    onChange={(value) => updateBuilderSetting(value)}
+  />
+)}
+
+      <BuilderLabeledInput
+  label="Name"
+  value={builderAdversary.name}
+  onChange={(value) => {
+    setSelectedLibraryId(null);
+    setBuilderAdversary((prev) => ({ ...prev, name: value }));
+  }}
+/>
+
+      <BuilderChoiceRow label="Tier">
+        {["1", "2", "3", "4"].map((tier) => (
+          <BuilderChoiceButton
+            compact
+            key={tier}
+            label={tier}
+            active={builderAdversary.tier === tier}
+            onClick={() => {
+              setSelectedLibraryId(null);
+              setBuilderAdversary((prev) => ({ ...prev, tier }));
+            }}
+          />
+        ))}
       </BuilderChoiceRow>
 
-      {((builderAdversary.setting ?? "Stormlight") !== "Stormlight" &&
-        builderAdversary.setting !== "Mistborn") && (
-        <BuilderTextInput
-          value={builderAdversary.setting}
-          placeholder="Custom setting"
-          onChange={(value) => updateBuilderSetting(value)}
-        />
-      )}
-
-      <BuilderTextInput
-        value={builderAdversary.name}
-        placeholder="Name"
-        onChange={(value) => {
-          setSelectedLibraryId(null);
-          setBuilderAdversary((prev) => ({ ...prev, name: value }));
-        }}
-      />
-
-      <BuilderTextInput
-        value={builderAdversary.tier}
-        placeholder="Tier"
-        onChange={(value) => {
-          setSelectedLibraryId(null);
-          setBuilderAdversary((prev) => ({ ...prev, tier: value }));
-        }}
-      />
-
-      <BuilderTextInput
-        value={builderAdversary.type}
-        placeholder="Type"
-        onChange={(value) => {
-          setSelectedLibraryId(null);
-          setBuilderAdversary((prev) => ({ ...prev, type: value }));
-        }}
-      />
+      <BuilderChoiceRow label="Type">
+        {["Minion", "Rival", "Boss", "Companion"].map((type) => (
+          <BuilderChoiceButton
+            compact
+            key={type}
+            label={type}
+            active={builderAdversary.type === type}
+            onClick={() => {
+              setSelectedLibraryId(null);
+              setBuilderAdversary((prev) => ({ ...prev, type }));
+            }}
+          />
+        ))}
+      </BuilderChoiceRow>
       
       <BuilderChoiceRow label="Size">
   {["Tiny", "Small", "Medium", "Large", "Huge"].map((s) => (
     <BuilderChoiceButton
+      compact
       key={s}
       label={s}
       active={builderAdversary.size === s}
@@ -2927,16 +4077,13 @@ background: isOpen
   ))}
 </BuilderChoiceRow>
 
-<div style={{ width: "100%" }}>
-<BuilderTextInput
-      value={builderAdversary.species}
-      onChange={(v) =>
-        setBuilderAdversary((prev) => ({ ...prev, species: v }))
-      }
-      placeholder="Species (e.g., Humanoid)"
-      width="100%"
-    />
-    </div>
+<BuilderLabeledInput
+  label="Species"
+  value={builderAdversary.species || "Humanoid"}
+  onChange={(v) =>
+    setBuilderAdversary((prev) => ({ ...prev, species: v }))
+  }
+/>
 
     </div>
   </details>
@@ -2954,7 +4101,20 @@ background: isOpen
                   </div>
                   <div style={{ textAlign: "center" }}>
                     <div>DEF</div>
-                    <BuilderNumberInput value={builderAdversary.physical?.def} onChange={(v) => setPhysical("def", v)} />
+                    <div
+                      style={{
+                        width: 56,
+                        padding: "4px 6px",
+                        fontSize: 14,
+                        fontWeight: "bold",
+                        textAlign: "center",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      {(builderAdversary.physical?.str ?? 0) +
+                        (builderAdversary.physical?.spd ?? 0) +
+                        10}
+                    </div>
                   </div>
                   <div style={{ textAlign: "center" }}>
                     <div>SPD</div>
@@ -2972,7 +4132,20 @@ background: isOpen
                   </div>
                   <div style={{ textAlign: "center" }}>
                     <div>DEF</div>
-                    <BuilderNumberInput value={builderAdversary.cognitive?.def} onChange={(v) => setCognitive("def", v)} />
+                    <div
+                      style={{
+                        width: 56,
+                        padding: "4px 6px",
+                        fontSize: 14,
+                        fontWeight: "bold",
+                        textAlign: "center",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      {(builderAdversary.cognitive?.int ?? 0) +
+                        (builderAdversary.cognitive?.wil ?? 0) +
+                        10}
+                    </div>
                   </div>
                   <div style={{ textAlign: "center" }}>
                     <div>WIL</div>
@@ -2990,7 +4163,20 @@ background: isOpen
                   </div>
                   <div style={{ textAlign: "center" }}>
                     <div>DEF</div>
-                    <BuilderNumberInput value={builderAdversary.spiritual?.def} onChange={(v) => setSpiritual("def", v)} />
+                    <div
+                      style={{
+                        width: 56,
+                        padding: "4px 6px",
+                        fontSize: 14,
+                        fontWeight: "bold",
+                        textAlign: "center",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      {(builderAdversary.spiritual?.awa ?? 0) +
+                        (builderAdversary.spiritual?.pre ?? 0) +
+                        10}
+                    </div>
                   </div>
                   <div style={{ textAlign: "center" }}>
                     <div>PRE</div>
@@ -3003,13 +4189,23 @@ background: isOpen
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, auto)", gap: 12, marginBottom: 12 }}>
               <div>
                 <div>Health</div>
-                <BuilderNumberInput
-                  value={builderAdversary.health}
-                  onChange={(value) => {
-                    setSelectedLibraryId(null);
-                    setBuilderAdversary((prev) => ({ ...prev, health: value }));
+                <div
+                  style={{
+                    width: 56,
+                    padding: "4px 6px",
+                    fontSize: 14,
+                    fontWeight: "bold",
+                    textAlign: "center",
+                    boxSizing: "border-box",
                   }}
-                />
+                >
+                  {builderAdversary.minHealth != null &&
+                  builderAdversary.maxHealth != null
+                    ? Math.round(
+                        (builderAdversary.minHealth + builderAdversary.maxHealth) / 2
+                      )
+                    : builderAdversary.health ?? 0}
+                </div>
               </div>
               <div>
                 <div>Focus</div>
@@ -3033,14 +4229,35 @@ background: isOpen
               </div>
             </div>
 
-            <BuilderTextInput
-              value={builderAdversary.healthRange}
-              placeholder="Health range, e.g. 32–48"
-              onChange={(value) => {
-                setSelectedLibraryId(null);
-                setBuilderAdversary((prev) => ({ ...prev, healthRange: value }));
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                alignItems: "center",
               }}
-            />
+            >
+              <div>
+                <div>Min Health</div>
+                <BuilderNumberInput
+                  value={builderAdversary.minHealth}
+                  onChange={(value) => {
+                    setSelectedLibraryId(null);
+                    setHealthRange("minHealth", value);
+                  }}
+                />
+              </div>
+
+              <div>
+                <div>Max Health</div>
+                <BuilderNumberInput
+                  value={builderAdversary.maxHealth}
+                  onChange={(value) => {
+                    setSelectedLibraryId(null);
+                    setHealthRange("maxHealth", value);
+                  }}
+                />
+              </div>
+            </div>
           </details>
           </BuilderCard>
 
@@ -3048,197 +4265,656 @@ background: isOpen
           <details open>
             <SectionSummary title="DETAILS" />
             <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
-              <div>
-  <BuilderTextInput
-    value={
-      typeof builderAdversary.deflect === "string"
-        ? builderAdversary.deflect
-        : builderAdversary.deflect != null
-        ? String(builderAdversary.deflect)
-        : ""
-    }
-    placeholder="Deflect e.g. 1 (leather)"
-    onChange={(value) => {
-      setSelectedLibraryId(null);
-      setBuilderAdversary((prev) => ({ ...prev, deflect: value }));
-    }}
-  />
-</div>
-              <BuilderTextInput
-                value={builderAdversary.movement}
-                placeholder="Movement"
-                onChange={(value) => {
-                  setSelectedLibraryId(null);
-                  setBuilderAdversary((prev) => ({ ...prev, movement: value }));
-                }}
-              />
-              <BuilderTextInput
-                value={builderAdversary.senses}
-                placeholder="Senses"
-                onChange={(value) => {
-                  setSelectedLibraryId(null);
-                  setBuilderAdversary((prev) => ({ ...prev, senses: value }));
-                }}
-              />
-              <BuilderTextInput
-                value={builderAdversary.languages}
-                placeholder="Languages"
-                onChange={(value) => {
-                  setSelectedLibraryId(null);
-                  setBuilderAdversary((prev) => ({ ...prev, languages: value }));
-                }}
-              />
-              <BuilderTextInput
-                value={builderAdversary.immunities}
-                placeholder="Immunities"
-                onChange={(value) => {
-                  setSelectedLibraryId(null);
-                  setBuilderAdversary((prev) => ({ ...prev, immunities: value }));
-                }}
-              />
+  <BuilderLabeledInput
+  label="Deflect"
+  labelWidth={90}
+  value={
+    typeof builderAdversary.deflect === "string"
+      ? builderAdversary.deflect
+      : builderAdversary.deflect != null
+      ? String(builderAdversary.deflect)
+      : ""
+  }
+  onChange={(value) => {
+    setSelectedLibraryId(null);
+    setBuilderAdversary((prev) => ({
+      ...prev,
+      deflect: value,
+    }));
+  }}
+  placeholder="e.g. 1 (leather)"
+/>
+
+<BuilderLabeledInput
+  label="Movement"
+  labelWidth={90}
+  value={builderAdversary.movement}
+  onChange={(value) => {
+    setSelectedLibraryId(null);
+    setBuilderAdversary((prev) => ({
+      ...prev,
+      movement: value,
+    }));
+  }}
+/>
+
+<BuilderLabeledInput
+  label="Senses"
+  labelWidth={90}
+  value={builderAdversary.senses}
+  onChange={(value) => {
+    setSelectedLibraryId(null);
+    setBuilderAdversary((prev) => ({
+      ...prev,
+      senses: value,
+    }));
+  }}
+/>
+
+<BuilderLabeledInput
+  label="Languages"
+  labelWidth={90}
+  value={builderAdversary.languages}
+  onChange={(value) => {
+    setSelectedLibraryId(null);
+    setBuilderAdversary((prev) => ({
+      ...prev,
+      languages: value,
+    }));
+  }}
+/>
+
+<BuilderLabeledInput
+  label="Immunities"
+  labelWidth={90}
+  value={builderAdversary.immunities || "None"}
+  onChange={(value) => {
+    setSelectedLibraryId(null);
+    setBuilderAdversary((prev) => ({
+      ...prev,
+      immunities: value,
+    }));
+  }}
+/>
             </div>
           </details>
           </BuilderCard>
           
           <BuilderCard>
-          <details open>
-            <SectionSummary title="SKILLS" />
-            <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
-              <div>
-                <div>Physical Skills (one per line)</div>
-                <BuilderTextArea
-                  value={joinLines(builderAdversary.skills?.physical)}
-                  onChange={(value) => {
-                    setSelectedLibraryId(null);
-                    setBuilderAdversary((prev) => ({
-                      ...prev,
-                      skills: {
-                        physical: splitLines(value),
-                        cognitive: prev.skills?.cognitive ?? [],
-                        spiritual: prev.skills?.spiritual ?? [],
-                      },
-                    }));
-                  }}
-                  rows={4}
-                />
-              </div>
+            <details open>
+              <SectionSummary title="SKILLS" />
 
-              <div>
-                <div>Cognitive Skills (one per line)</div>
-                <BuilderTextArea
-                  value={joinLines(builderAdversary.skills?.cognitive)}
-                  onChange={(value) => {
-                    setSelectedLibraryId(null);
-                    setBuilderAdversary((prev) => ({
-                      ...prev,
-                      skills: {
-                        physical: prev.skills?.physical ?? [],
-                        cognitive: splitLines(value),
-                        spiritual: prev.skills?.spiritual ?? [],
-                      },
-                    }));
-                  }}
-                  rows={4}
-                />
-              </div>
+              <div style={{ display: "grid", gap: 14, marginBottom: 12 }}>
+                <div>
+                  <div style={{ marginBottom: 4 }}>Physical Skills</div>
+                  <BuilderSkillList
+                    listId="physical"
+                    values={builderAdversary.skills?.physical}
+                    onChange={(values) => {
+                      setSelectedLibraryId(null);
+                      setBuilderAdversary((prev) => ({
+                        ...prev,
+                        skills: {
+                          physical: values,
+                          cognitive: prev.skills?.cognitive ?? [],
+                          spiritual: prev.skills?.spiritual ?? [],
+                        },
+                      }));
+                    }}
+                  />
+                </div>
 
-              <div>
-                <div>Spiritual Skills (one per line)</div>
-                <BuilderTextArea
-                  value={joinLines(builderAdversary.skills?.spiritual)}
-                  onChange={(value) => {
-                    setSelectedLibraryId(null);
-                    setBuilderAdversary((prev) => ({
-                      ...prev,
-                      skills: {
-                        physical: prev.skills?.physical ?? [],
-                        cognitive: prev.skills?.cognitive ?? [],
-                        spiritual: splitLines(value),
-                      },
-                    }));
-                  }}
-                  rows={4}
-                />
-              </div>
+                <div>
+                  <div style={{ marginBottom: 4 }}>Cognitive Skills</div>
+                  <BuilderSkillList
+                    listId="cognitive"
+                    values={builderAdversary.skills?.cognitive}
+                    onChange={(values) => {
+                      setSelectedLibraryId(null);
+                      setBuilderAdversary((prev) => ({
+                        ...prev,
+                        skills: {
+                          physical: prev.skills?.physical ?? [],
+                          cognitive: values,
+                          spiritual: prev.skills?.spiritual ?? [],
+                        },
+                      }));
+                    }}
+                  />
+                </div>
 
-              <div>
-                <div>Surge Skills (one per line)</div>
-                <BuilderTextArea
-                  value={joinLines(builderAdversary.surgeSkills)}
-                  onChange={(value) => {
-                    setSelectedLibraryId(null);
-                    setBuilderAdversary((prev) => ({
-                      ...prev,
-                      surgeSkills: splitLines(value),
-                    }));
-                  }}
-                  rows={3}
-                />
+                <div>
+                  <div style={{ marginBottom: 4 }}>Spiritual Skills</div>
+                  <BuilderSkillList
+                    listId="spiritual"
+                    values={builderAdversary.skills?.spiritual}
+                    onChange={(values) => {
+                      setSelectedLibraryId(null);
+                      setBuilderAdversary((prev) => ({
+                        ...prev,
+                        skills: {
+                          physical: prev.skills?.physical ?? [],
+                          cognitive: prev.skills?.cognitive ?? [],
+                          spiritual: values,
+                        },
+                      }));
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <div style={{ marginBottom: 4 }}>Invested Skills</div>
+                  <BuilderSkillList
+                    listId="invested"
+                    values={builderAdversary.investedSkills}
+                    onChange={(values) => {
+                      setSelectedLibraryId(null);
+                      setBuilderAdversary((prev) => ({
+                        ...prev,
+                        investedSkills: values,
+                      }));
+                    }}
+                  />
+                </div>
               </div>
-            </div>
-          </details>
+            </details>
           </BuilderCard>
 
           <BuilderCard>
-          <details open>
-            <SectionSummary title="FEATURES" />
-            <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
-              {(builderAdversary.features ?? []).map((feature, index) => (
-                <div
-                  key={index}
-                  style={{
-                    border: "1px solid #c69a3a",
-                    borderRadius: 6,
-                    padding: 8,
-                    background: "#fff",
-                  }}
-                >
-                  <div style={{ marginBottom: 6 }}>
-                    <BuilderTextInput
-                      value={feature.name}
-                      placeholder="Feature name"
-                      onChange={(value) => updateFeature(index, "name", value)}
-                    />
-                  </div>
-                  <BuilderTextArea
-                    value={feature.text}
-                    placeholder="Feature text"
-                    onChange={(value) => updateFeature(index, "text", value)}
-                    rows={3}
-                  />
-                  <button type="button" onClick={() => removeFeature(index)} style={{ marginTop: 8 }}>
-                    Remove Feature
-                  </button>
-                </div>
-              ))}
-              <button type="button" onClick={addFeature}>Add Feature</button>
-            </div>
-          </details>
-          </BuilderCard>
+  <details open>
+    <SectionSummary title="FEATURES" />
+        
+        <div
+  style={{
+    position: "relative",
+    marginBottom: 12,
+    textAlign: "left",
+  }}
+>
+  <button
+    type="button"
+    onClick={() => setCommonFeaturesOpen((prev) => !prev)}
+    style={{
+      padding: "6px 10px",
+      border: "1px solid #c69a3a",
+      borderRadius: 6,
+      background: "#fffaf0",
+      color: "#1f3b67",
+      fontWeight: 600,
+      cursor: "pointer",
+      fontSize: 12,
+    }}
+  >
+    Common Features
+<span
+  style={{
+    display: "inline-block",
+    marginLeft: 6,
+    transform: commonFeaturesOpen ? "rotate(90deg)" : "rotate(0deg)",
+    transition: "transform 0.2s ease",
+  }}
+>
+  ▶
+</span>
+  </button>
 
-  <SectionSummary title="ACTIONS" />
-  <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
-    {(builderAdversary.actions ?? []).map((action, index) => (
+{/* Common Features dropdown menu */}
+  {commonFeaturesOpen && (
+    <div
+      style={{
+        marginTop: 6,
+        border: "1px solid #c69a3a",
+        borderRadius: 6,
+        background: "#fff",
+        padding: 8,
+        maxHeight: 220,
+        overflowY: "auto",
+      }}
+    >
+      {featureLibrary.length === 0 ? (
+        <div
+          style={{
+            fontSize: 12,
+            color: "#6b7280",
+            padding: 4,
+          }}
+        >
+          No common features saved yet.
+        </div>
+      ) : (
+        <>
+          {[...featureLibrary]
+  .sort((a, b) => a.name.localeCompare(b.name))
+  .map((feature) => (
+    <div
+      key={feature.id}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 7,
+        padding: "5px 4px",
+        fontSize: 13,
+        color: "#1f3b67",
+      }}
+    >
+      {editingCommonFeatureId === feature.id ? (
+        <div
+          style={{
+            display: "grid",
+            gap: 6,
+            width: "100%",
+          }}
+        >
+          <input
+            type="text"
+            value={editingCommonFeatureName}
+            onChange={(e) =>
+              setEditingCommonFeatureName(e.target.value)
+            }
+            placeholder="Feature name"
+            style={{
+              width: "100%",
+              padding: "6px 8px",
+              border: "1px solid #c69a3a",
+              borderRadius: 4,
+              fontSize: 13,
+              boxSizing: "border-box",
+            }}
+          />
+
+          <textarea
+            value={editingCommonFeatureText}
+            onChange={(e) =>
+              setEditingCommonFeatureText(e.target.value)
+            }
+            placeholder="Feature text"
+            rows={3}
+            style={{
+              width: "100%",
+              padding: "6px 8px",
+              border: "1px solid #c69a3a",
+              borderRadius: 4,
+              fontSize: 13,
+              boxSizing: "border-box",
+              resize: "vertical",
+            }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 6,
+            }}
+          >
+            <button
+              type="button"
+              onClick={cancelEditingCommonFeature}
+              style={{
+                padding: "4px 8px",
+                border: "1px solid #d8c08a",
+                borderRadius: 5,
+                background: "#fff",
+                color: "#1f3b67",
+                cursor: "pointer",
+                fontSize: 11,
+              }}
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              onClick={saveCommonFeatureEdit}
+              style={{
+                padding: "4px 8px",
+                border: "1px solid #c69a3a",
+                borderRadius: 5,
+                background: "#fffaf0",
+                color: "#1f3b67",
+                cursor: "pointer",
+                fontWeight: 600,
+                fontSize: 11,
+              }}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+              flex: 1,
+              cursor: "pointer",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={selectedCommonFeatureIds.includes(
+                feature.id
+              )}
+              onChange={() =>
+                toggleCommonFeature(feature.id)
+              }
+            />
+
+            <span style={{ flex: 1 }}>
+              {feature.name}
+            </span>
+
+            <span
+              style={{
+                fontSize: 10,
+                color: "#6b7280",
+              }}
+            >
+              {feature.source}
+            </span>
+          </label>
+
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  startEditingCommonFeature(feature)
+                }
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  padding: "2px 4px",
+                  color: "#1f3b67",
+                  cursor: "pointer",
+                  fontSize: 11,
+                  textDecoration: "underline",
+                }}
+              >
+                Edit
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  deleteCommonFeature(feature)
+                }
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  padding: "2px 4px",
+                  color: "#9b2c2c",
+                  cursor: "pointer",
+                  fontSize: 11,
+                  textDecoration: "underline",
+                }}
+              >
+                Delete
+              </button>
+            </>
+        </>
+      )}
+    </div>
+  ))}
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              marginTop: 8,
+              paddingTop: 8,
+              borderTop: "1px solid #e5e7eb",
+            }}
+          >
+            <button
+              type="button"
+              onClick={addSelectedCommonFeatures}
+              disabled={selectedCommonFeatureIds.length === 0}
+              style={{
+                padding: "5px 10px",
+                border: "1px solid #c69a3a",
+                borderRadius: 6,
+                background:
+                  selectedCommonFeatureIds.length === 0
+                    ? "#f3f4f6"
+                    : "#fffaf0",
+                color:
+                  selectedCommonFeatureIds.length === 0
+                    ? "#9ca3af"
+                    : "#1f3b67",
+                fontWeight: 600,
+                cursor:
+                  selectedCommonFeatureIds.length === 0
+                    ? "default"
+                    : "pointer",
+                fontSize: 12,
+              }}
+            >
+              Add Selected
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )}
+</div>
+    <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
+
+      {(
+        builderAdversary.features &&
+        builderAdversary.features.length > 0
+          ? builderAdversary.features
+          : [{ name: "", text: "" }]
+      ).map((feature, index) => (
+        <div
+          key={index}
+          style={{
+            marginBottom:12,
+          }}
+        >
+          <div style={{ marginBottom: 6 }}>
+            <input
+              type="text"
+              value={feature.name}
+              placeholder="Feature name"
+              data-feature-index={index}
+              onChange={(e) =>
+                updateFeature(index, "name", e.target.value)
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+
+                  const textField =
+                    document.querySelector<HTMLTextAreaElement>(
+                      `[data-feature-text-index="${index}"]`
+                    );
+
+                  textField?.focus();
+                }
+              }}
+              style={{
+                width: "100%",
+                padding: "6px 8px",
+                border: "1px solid #c69a3a",
+                borderRadius: 4,
+                fontSize: 14,
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <textarea
+            value={feature.text}
+            placeholder="Feature text"
+            data-feature-text-index={index}
+            rows={3}
+            onChange={(e) =>
+              updateFeature(index, "text", e.target.value)
+            }
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+
+                // If this entire feature is blank, do not create another one.
+                if (!feature.name.trim() && !feature.text.trim()) {
+                  return;
+                }
+
+                const nextName =
+                  document.querySelector<HTMLInputElement>(
+                    `[data-feature-index="${index + 1}"]`
+                  );
+
+                if (nextName) {
+                  nextName.focus();
+                } else {
+                  addFeature(index);
+                }
+              }
+            }}
+            style={{
+              width: "100%",
+              padding: "6px 8px",
+              border: "1px solid #c69a3a",
+              borderRadius: 4,
+              fontSize: 14,
+              boxSizing: "border-box",
+              resize: "vertical",
+            }}
+          />
+
+          {(feature.name.trim() || feature.text.trim()) && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginTop: 6,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => saveAsCommonFeature(feature)}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  padding: 0,
+                  color: "#c69a3a",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  textDecoration: "underline",
+                }}
+              >
+                save as common feature
+              </button>
+
+              <button
+                type="button"
+                onClick={() => removeFeature(index)}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  padding: 0,
+                  color: "#7a1f1f",
+                  cursor: "pointer",
+                  fontSize: 12,
+                }}
+              >
+                remove
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
+
+      <button
+        type="button"
+        onClick={() => addFeature()}
+        style={{
+          justifySelf: "start",
+          padding: "4px 10px",
+          border: "1px solid #d8c08a",
+          borderRadius: 6,
+          background: "#fffaf0",
+          color: "#1f3b67",
+          fontWeight: 600,
+          cursor: "pointer",
+          fontSize: 12,
+        }}
+      >
+        + Add Feature
+      </button>
+
+    </div>
+  </details>
+</BuilderCard>
+
+<BuilderCard>
+  <details open>
+    <SectionSummary title="ACTIONS" />
+
+    <div style={{ display: "grid", gap: 14, marginBottom: 12 }}>
+  {(
+    builderAdversary.actions && builderAdversary.actions.length > 0
+      ? builderAdversary.actions
+      : [
+          {
+            name: "",
+            text: "",
+            cost: 1 as ActionCost,
+            focusCost: "",
+            investitureCost: "",
+            attackBonus: "",
+            reach: "",
+            range: "",
+            target: "",
+            graze: "",
+            hit: "",
+            notes: "",
+          },
+        ]
+  ).map((action, index) => (
       <div
         key={index}
         style={{
-          border: "1px solid #c69a3a",
-          borderRadius: 6,
-          padding: 8,
-          background: "#fff",
+          marginBottom: 12,
         }}
       >
         <div style={{ marginBottom: 6 }}>
-          <BuilderTextInput
+          <BuilderLabeledInput
+            label="Name"
             value={action.name ?? ""}
-            placeholder="Action name"
+            dataActionIndex={index}
             onChange={(value) => updateAction(index, "name", value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+
+                const actionCost =
+                  document.querySelector<HTMLSelectElement>(
+                    `[data-action-cost-index="${index}"]`
+                  );
+
+                actionCost?.focus();
+              }
+            }}
           />
         </div>
 
-        <div style={{ marginBottom: 6 }}>
-          <label style={{ display: "block", marginBottom: 4 }}>Action Cost</label>
-          <select
+        <div
+          style={{
+            marginBottom: 6,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+          }}
+        >
+  <label>Action Cost</label>
+  <select
+          data-action-cost-index={index}
             value={
               action.cost === "free"
                 ? "free"
@@ -3247,6 +4923,38 @@ background: isOpen
                 : String(action.cost ?? 1)
             }
             onChange={(e) => updateAction(index, "cost", e.target.value)}
+            onKeyDown={(e) => {
+              let newCost: string | null = null;
+
+              if (e.key === "0") {
+                newCost = "free";
+              } else if (e.key === "1") {
+                newCost = "1";
+              } else if (e.key === "2") {
+                newCost = "2";
+              } else if (e.key === "3") {
+                newCost = "3";
+              } else if (e.key.toLowerCase() === "r") {
+                newCost = "reaction";
+              }
+
+              if (newCost !== null) {
+                e.preventDefault();
+                updateAction(index, "cost", newCost);
+                return;
+              }
+
+              if (e.key === "Enter") {
+                e.preventDefault();
+
+                const nextField =
+                  document.querySelector<HTMLInputElement>(
+                    `[data-action-focus-index="${index}"]`
+                  );
+
+                nextField?.focus();
+              }
+            }}
             style={{
               padding: "6px 8px",
               border: "1px solid #c69a3a",
@@ -3264,10 +4972,11 @@ background: isOpen
 
         <div style={{ marginBottom: 6 }}>
   <BuilderTextInput
-    value={action.focusCost ?? ""}
-    placeholder="Focus cost (example: 1)"
-    onChange={(value) => updateAction(index, "focusCost", value)}
-  />
+  value={action.focusCost ?? ""}
+  placeholder="Focus cost (example: 1)"
+  onChange={(value) => updateAction(index, "focusCost", value)}
+  dataActionFocusIndex={index}
+/>
 </div>
 
 <div style={{ marginBottom: 6 }}>
@@ -3346,18 +5055,53 @@ background: isOpen
           />
         </div>
 
-        <button
-          type="button"
-          onClick={() => removeAction(index)}
-          style={{ marginTop: 8 }}
-        >
-          Remove Action
-        </button>
+        <div
+  style={{
+    display: "flex",
+    justifyContent: "flex-end",
+    marginTop: 6,
+  }}
+>
+          <button
+            type="button"
+            onClick={() => removeAction(index)}
+            style={{
+              border: "none",
+              background: "transparent",
+              padding: 0,
+              color: "#7a1f1f",
+              cursor: "pointer",
+              fontSize: 12,
+            }}
+          >
+            remove
+          </button>
+        </div>
       </div>
     ))}
-    <button type="button" onClick={addAction}>Add Action</button>
-  </div>
-  <details open>
+    <button
+        type="button"
+        onClick={addAction}
+        style={{
+          justifySelf: "start",
+          padding: "4px 10px",
+          border: "1px solid #d8c08a",
+          borderRadius: 6,
+          background: "#fffaf0",
+          color: "#1f3b67",
+          fontWeight: 600,
+          cursor: "pointer",
+          fontSize: 12,
+        }}
+      >
+        + Add Action
+      </button>
+      </div>
+  </details>
+</BuilderCard>
+
+<BuilderCard>
+<details open>
   <SectionSummary title="OPPORTUNITIES AND COMPLICATIONS" />
 
   <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
@@ -3422,7 +5166,9 @@ background: isOpen
     </div>
   </div>
 </details>
+</BuilderCard>
 
+<BuilderCard>
 <details open>
   <SectionSummary title="TACTICS" />
 
@@ -3435,9 +5181,123 @@ background: isOpen
     />
   </div>
 </details>
+</BuilderCard>
         </div>
         </div>
       )}
+        </div>
+
+    {pendingCommonFeature && (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0, 0, 0, 0.35)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1000,
+          padding: 16,
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 320,
+            background: "#fffaf0",
+            border: "2px solid #c69a3a",
+            borderRadius: 10,
+            padding: 16,
+            boxShadow: "0 6px 24px rgba(0,0,0,0.25)",
+            color: "#1f3b67",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 16,
+              fontWeight: 700,
+              marginBottom: 10,
+              textAlign: "center",
+            }}
+          >
+            Save Common Feature
+          </div>
+
+          <div
+            style={{
+              fontSize: 13,
+              marginBottom: 14,
+              textAlign: "center",
+            }}
+          >
+            Save <strong>"{pendingCommonFeature.name}"</strong> as:
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              gap: 8,
+              marginBottom: 12,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() =>
+                confirmSaveAsCommonFeature("Official")
+              }
+              style={{
+                padding: "6px 12px",
+                border: "2px solid #c69a3a",
+                borderRadius: 6,
+                background: "#efe3c9",
+                color: "#1f3b67",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Official
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                confirmSaveAsCommonFeature("Homebrew")
+              }
+              style={{
+                padding: "6px 12px",
+                border: "1px solid #d8c08a",
+                borderRadius: 6,
+                background: "#fffaf0",
+                color: "#1f3b67",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Homebrew
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setPendingCommonFeature(null)}
+            style={{
+              display: "block",
+              margin: "0 auto",
+              border: "none",
+              background: "transparent",
+              color: "#6b7280",
+              cursor: "pointer",
+              fontSize: 12,
+              textDecoration: "underline",
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    )}
+
     </div>
   );
 }
