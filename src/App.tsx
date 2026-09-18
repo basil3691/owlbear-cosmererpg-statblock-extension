@@ -505,6 +505,14 @@ function ComplicationIcon() {
   );
 }
 
+function EraIcon({ era }: { era: 1 | 2 }) {
+  return (
+    <span className={`era-icon era-${era}`}>
+      ERA {era}
+    </span>
+  );
+}
+
 // Renders rules text that may contain inline markup tokens like [free],
 // [action], [double], [opportunity], [complication], plus basic **bold**
 // and *italic* markdown. This is the shared renderer used anywhere rules
@@ -514,8 +522,8 @@ function InlineRulesText({ text }: { text: string }) {
 
   function renderInline(line: string, lineIndex: number) {
     const tokenParts = line.split(
-      /(\[free\]|\[action\]|\[double\]|\[triple\]|\[double action\]|\[triple action\]|\[reaction\]|\[opportunity\]|\[complication\])/g
-    );
+  /(\[free\]|\[action\]|\[double\]|\[triple\]|\[double action\]|\[triple action\]|\[reaction\]|\[opportunity\]|\[complication\]|\[era 1\]|\[era 2\])/gi
+);
 
     return tokenParts.map((part, tokenIndex) => {
       const key = `${lineIndex}-${tokenIndex}`;
@@ -533,6 +541,9 @@ function InlineRulesText({ text }: { text: string }) {
       }
       if (part === "[opportunity]") return <OpportunityIcon key={key} />;
       if (part === "[complication]") return <ComplicationIcon key={key} />;
+
+      if (part.toLowerCase() === "[era 1]") return <EraIcon key={key} era={1} />;
+      if (part.toLowerCase() === "[era 2]") return <EraIcon key={key} era={2} />;
 
       const richParts = part.split(/(\*\*.*?\*\*|\*.*?\*)/g);
 
@@ -1108,7 +1119,7 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
           letterSpacing: 0.5,
         }}
       >
-        {adversary.name ?? "Unnamed"}
+        <InlineRulesText text={adversary.name ?? "Unnamed"} />
       </h2>
 
       <p
@@ -1390,56 +1401,68 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
 
       <div style={{ borderTop: "2px solid var(--theme-accent)", margin: "6px 0" }} />
 
-      <details open>
+      <details open style={{ color: "var(--theme-text-primary)" }}>
         <SectionSummary title="DETAILS" />
 
         <p style={{ margin: "6px 0" }}>
-          <strong>Deflect:</strong> {adversary.deflect ?? "—"}
+          <strong style={{ color: "var(--theme-text-primary)" }}> Deflect:</strong> {adversary.deflect ?? "—"}
         </p>
 
         <p style={{ margin: "6px 0" }}>
-          <strong>Movement:</strong> {adversary.movement ?? "—"}
+          <strong style={{ color: "var(--theme-text-primary)" }}>Movement:</strong>{" "}
+          <InlineRulesText text={adversary.movement ?? "—"} />
         </p>
 
         <p style={{ margin: "6px 0" }}>
-          <strong>Senses:</strong> {adversary.senses ?? "—"}
+          <strong style={{ color: "var(--theme-text-primary)" }}>Senses:</strong>{" "}
+          <InlineRulesText text={adversary.senses ?? "—"} />
         </p>
 
         {adversary.immunities && (
           <p style={{ margin: "6px 0" }}>
-            <strong>Immunities:</strong> {adversary.immunities}
+            <strong style={{ color: "var(--theme-text-primary)" }}>Immunities:</strong>{" "}
+            <InlineRulesText text={adversary.immunities} />
           </p>
         )}
 
         <p style={{ margin: "6px 0" }}>
-          <strong>Languages:</strong> {adversary.languages ?? "—"}
+          <strong style={{ color: "var(--theme-text-primary)" }}>Languages:</strong>{" "}
+          <InlineRulesText text={adversary.languages ?? "—"} />
         </p>
       </details>
 
       <div style={{ borderTop: "2px solid var(--theme-accent)", margin: "8px 0" }} />
 
-      <details open>
+      <details open style={{ color: "var(--theme-text-primary)" }}>
         <SectionSummary title="SKILLS" />
 
         <p style={{ margin: "4px 0" }}>
-          <strong>Physical:</strong>{" "}
-          {(adversary.skills?.physical ?? []).join(", ") || "—"}
+          <strong style={{ color: "var(--theme-text-primary)" }}>Physical:</strong>{" "}
+          <InlineRulesText
+            text={(adversary.skills?.physical ?? []).join(", ") || "—"}
+          />
         </p>
 
         <p style={{ margin: "4px 0" }}>
-          <strong>Cognitive:</strong>{" "}
-          {(adversary.skills?.cognitive ?? []).join(", ") || "—"}
+          <strong style={{ color: "var(--theme-text-primary)" }}>Cognitive:</strong>{" "}
+          <InlineRulesText
+            text={(adversary.skills?.cognitive ?? []).join(", ") || "—"}
+          />
         </p>
 
         <p style={{ margin: "4px 0" }}>
-          <strong>Spiritual:</strong>{" "}
-          {(adversary.skills?.spiritual ?? []).join(", ") || "—"}
+          <strong style={{ color: "var(--theme-text-primary)" }}>Spiritual:</strong>{" "}
+          <InlineRulesText
+            text={(adversary.skills?.spiritual ?? []).join(", ") || "—"}
+          />
         </p>
 
         {(adversary.investedSkills ?? []).length > 0 && (
           <p style={{ margin: "4px 0" }}>
-            <strong>Invested Skills:</strong>{" "}
-            {(adversary.investedSkills ?? []).join(", ")}
+            <strong style={{ color: "var(--theme-text-primary)" }}>Invested Skills:</strong>{" "}
+            <InlineRulesText
+              text={(adversary.investedSkills ?? []).join(", ")}
+            />
           </p>
         )}
       </details>
@@ -1452,7 +1475,7 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
 
             {(adversary.features ?? []).map((feature, i) => (
   <p key={`f-${i}`} style={{ margin: "4px 0" }}>
-    <strong>{feature.name}.</strong> <InlineRulesText text={feature.text} />
+    <strong><InlineRulesText text={feature.name} />.</strong> <InlineRulesText text={feature.text} />
   </p>
 ))}
           </details>
@@ -1479,18 +1502,34 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
                 </div>
 
                 <p style={{ margin: 0 }}>
-  <strong>
-  {action.name}
-  {(action.focusCost || action.investitureCost) &&
-    ` (Costs ${[
-      action.focusCost ? `${action.focusCost} Focus` : null,
-      action.investitureCost ? `${action.investitureCost} Investiture` : null,
-    ]
-      .filter(Boolean)
-      .join(", ")})`}
-  .
-</strong>{" "}
+<strong>
+  {(() => {
+    const eraMatch = action.name.match(/\s*(\[era [12]\])\s*$/i);
+    const nameWithoutEra = eraMatch
+      ? action.name.replace(/\s*\[era [12]\]\s*$/i, "")
+      : action.name;
 
+    return (
+      <>
+        <InlineRulesText text={nameWithoutEra} />.
+        {eraMatch && (
+          <>
+            {" "}
+            <InlineRulesText text={eraMatch[1]} />
+          </>
+        )}
+        {(action.focusCost || action.investitureCost) &&
+          ` (Costs ${[
+            action.focusCost ? `${action.focusCost} Focus` : null,
+            action.investitureCost ? `${action.investitureCost} Investiture` : null,
+          ]
+            .filter(Boolean)
+            .join(", ")})`}
+      </>
+    );
+  })()}
+
+</strong>{" "}
   {(() => {
     const headerParts = [
       action.attackBonus ? `Attack ${action.attackBonus}` : null,
@@ -1500,8 +1539,8 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
     ].filter(Boolean);
 
     return headerParts.length > 0
-      ? `${headerParts.join(", ")}. `
-      : null;
+  ? <InlineRulesText text={`${headerParts.join(", ")}. `} />
+  : null;
   })()}
 
   {action.graze && (
@@ -1574,7 +1613,7 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
       {adversary.tactics && (
         <>
           <div style={{ borderTop: "2px solid var(--theme-accent)", margin: "8px 0" }} />
-          <details>
+          <details open>
             <SectionSummary title="TACTICS" />
             <p style={{ margin: "4px 0" }}>
               <InlineRulesText text={adversary.tactics} />
@@ -3725,6 +3764,7 @@ color: "var(--theme-text-primary)",
         title="Clear search"
         style={{
           position: "absolute",
+          zIndex: 2,
           right: 6,
           top: "50%",
           transform: "translateY(-50%)",
@@ -4557,163 +4597,305 @@ color: "var(--theme-text-primary)",
           <BuilderCard>
           <details open>
             <SectionSummary title="STATS" />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10, marginBottom: 12 }}>
-              <div style={{ border: "1px solid var(--theme-accent)", borderRadius: 6, padding: 8 }}>
-                <div style={{ fontWeight: "bold", marginBottom: 8, textAlign: "center" }}>PHYSICAL</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, auto)", gap: 8, justifyContent: "center" }}>
-                  <div style={{ textAlign: "center" }}>
-                    <div>STR</div>
-                    <BuilderNumberInput value={builderAdversary.physical?.str} onChange={(v) => setPhysical("str", v)} />
-                  </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div>DEF</div>
-                    <div
-                      style={{
-                        width: 56,
-                        padding: "4px 6px",
-                        fontSize: 14,
-                        fontWeight: "bold",
-                        textAlign: "center",
-                        boxSizing: "border-box",
-                      }}
-                    >
-                      {(builderAdversary.physical?.str ?? 0) +
-                        (builderAdversary.physical?.spd ?? 0) +
-                        10}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div>SPD</div>
-                    <BuilderNumberInput value={builderAdversary.physical?.spd} onChange={(v) => setPhysical("spd", v)} />
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ border: "1px solid var(--theme-accent)", borderRadius: 6, padding: 8 }}>
-                <div style={{ fontWeight: "bold", marginBottom: 8, textAlign: "center" }}>COGNITIVE</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, auto)", gap: 8, justifyContent: "center" }}>
-                  <div style={{ textAlign: "center" }}>
-                    <div>INT</div>
-                    <BuilderNumberInput value={builderAdversary.cognitive?.int} onChange={(v) => setCognitive("int", v)} />
-                  </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div>DEF</div>
-                    <div
-                      style={{
-                        width: 56,
-                        padding: "4px 6px",
-                        fontSize: 14,
-                        fontWeight: "bold",
-                        textAlign: "center",
-                        boxSizing: "border-box",
-                      }}
-                    >
-                      {(builderAdversary.cognitive?.int ?? 0) +
-                        (builderAdversary.cognitive?.wil ?? 0) +
-                        10}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div>WIL</div>
-                    <BuilderNumberInput value={builderAdversary.cognitive?.wil} onChange={(v) => setCognitive("wil", v)} />
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ border: "1px solid var(--theme-accent)", borderRadius: 6, padding: 8 }}>
-                <div style={{ fontWeight: "bold", marginBottom: 8, textAlign: "center" }}>SPIRITUAL</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, auto)", gap: 8, justifyContent: "center" }}>
-                  <div style={{ textAlign: "center" }}>
-                    <div>AWA</div>
-                    <BuilderNumberInput value={builderAdversary.spiritual?.awa} onChange={(v) => setSpiritual("awa", v)} />
-                  </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div>DEF</div>
-                    <div
-                      style={{
-                        width: 56,
-                        padding: "4px 6px",
-                        fontSize: 14,
-                        fontWeight: "bold",
-                        textAlign: "center",
-                        boxSizing: "border-box",
-                      }}
-                    >
-                      {(builderAdversary.spiritual?.awa ?? 0) +
-                        (builderAdversary.spiritual?.pre ?? 0) +
-                        10}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div>PRE</div>
-                    <BuilderNumberInput value={builderAdversary.spiritual?.pre} onChange={(v) => setSpiritual("pre", v)} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
 <div
   style={{
     display: "grid",
-    gridTemplateColumns: "1fr 1fr 1fr",
-    gap: 16,
-    alignItems: "start",
-    marginBottom: 12,
+    gap: 4,
+    marginBottom: 8,
   }}
 >
-  {/* HEALTH */}
-  <div style={{ textAlign: "center" }}>
+  {/* PHYSICAL */}
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "110px auto",
+      alignItems: "center",
+      justifyContent: "center",
+      columnGap: 12,
+    }}
+  >
     <div
       style={{
-        fontWeight: 600,
-        marginBottom: 6,
+        fontWeight: 700,
+        fontSize: 12,
+        letterSpacing: 0.4,
+        textAlign: "center",
+        color: "var(--theme-text-primary)",
       }}
     >
-      Health
+      PHYSICAL
     </div>
 
     <div
       style={{
-        display: "flex",
-        justifyContent: "center",
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 56px)",
         gap: 8,
       }}
     >
-      <div>
-        <div style={{ fontSize: 12, marginBottom: 3 }}>MIN</div>
+      <div style={{ textAlign: "center" }}>
+        <div style={{ fontSize: 12, color: "var(--theme-text-primary)" }}>
+          STR
+        </div>
         <BuilderNumberInput
-          value={builderAdversary.minHealth}
-          onChange={(value) => {
-            setSelectedLibraryId(null);
-            setHealthRange("minHealth", value);
-          }}
+          width={56}
+          value={builderAdversary.physical?.str}
+          onChange={(v) => setPhysical("str", v)}
         />
       </div>
 
-      <div>
-        <div style={{ fontSize: 12, marginBottom: 3 }}>MAX</div>
-        <BuilderNumberInput
-          value={builderAdversary.maxHealth}
-          onChange={(value) => {
-            setSelectedLibraryId(null);
-            setHealthRange("maxHealth", value);
+      <div style={{ textAlign: "center" }}>
+        <div style={{ fontSize: 12, color: "var(--theme-text-primary)" }}>
+          DEF
+        </div>
+        <div
+          style={{
+            width: 56,
+            padding: "4px 6px",
+            fontSize: 14,
+            fontWeight: "bold",
+            textAlign: "center",
+            boxSizing: "border-box",
+            color: "var(--theme-text-primary)",
           }}
+        >
+          {(builderAdversary.physical?.str ?? 0) +
+            (builderAdversary.physical?.spd ?? 0) +
+            10}
+        </div>
+      </div>
+
+      <div style={{ textAlign: "center" }}>
+        <div style={{ fontSize: 12, color: "var(--theme-text-primary)" }}>
+          SPD
+        </div>
+        <BuilderNumberInput
+          width={56}
+          value={builderAdversary.physical?.spd}
+          onChange={(v) => setPhysical("spd", v)}
         />
       </div>
     </div>
   </div>
 
-  {/* FOCUS */}
-  <div style={{ textAlign: "center" }}>
-    <div
-      style={{
-        fontWeight: 600,
-        marginBottom: 21,
-      }}
-    >
-      Focus
+
+{/* COGNITIVE */}
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "110px auto",
+    alignItems: "center",
+    justifyContent: "center",
+    columnGap: 12,
+  }}
+>
+  <div
+    style={{
+      fontWeight: 700,
+      fontSize: 12,
+      letterSpacing: 0.4,
+      textAlign: "center",
+      color: "var(--theme-text-primary)",
+    }}
+  >
+    COGNITIVE
+  </div>
+
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(3, 56px)",
+      gap: 8,
+    }}
+  >
+    <div style={{ textAlign: "center" }}>
+      <div style={{ fontSize: 12, color: "var(--theme-text-primary)" }}>
+        INT
+      </div>
+      <BuilderNumberInput
+        width={56}
+        value={builderAdversary.cognitive?.int}
+        onChange={(v) => setCognitive("int", v)}
+      />
     </div>
 
+    <div style={{ textAlign: "center" }}>
+      <div style={{ fontSize: 12, color: "var(--theme-text-primary)" }}>
+        DEF
+      </div>
+      <div
+        style={{
+          width: 56,
+          padding: "4px 6px",
+          fontSize: 14,
+          fontWeight: "bold",
+          textAlign: "center",
+          boxSizing: "border-box",
+          color: "var(--theme-text-primary)",
+        }}
+      >
+        {(builderAdversary.cognitive?.int ?? 0) +
+          (builderAdversary.cognitive?.wil ?? 0) +
+          10}
+      </div>
+    </div>
+
+    <div style={{ textAlign: "center" }}>
+      <div style={{ fontSize: 12, color: "var(--theme-text-primary)" }}>
+        WIL
+      </div>
+      <BuilderNumberInput
+        width={56}
+        value={builderAdversary.cognitive?.wil}
+        onChange={(v) => setCognitive("wil", v)}
+      />
+    </div>
+  </div>
+</div>
+
+{/* SPIRITUAL */}
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "110px auto",
+    alignItems: "center",
+    justifyContent: "center",
+    columnGap: 12,
+  }}
+>
+  <div
+    style={{
+      fontWeight: 700,
+      fontSize: 12,
+      letterSpacing: 0.4,
+      textAlign: "center",
+      color: "var(--theme-text-primary)",
+    }}
+  >
+    SPIRITUAL
+  </div>
+
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(3, 56px)",
+      gap: 8,
+    }}
+  >
+    <div style={{ textAlign: "center" }}>
+      <div style={{ fontSize: 12, color: "var(--theme-text-primary)" }}>
+        AWA
+      </div>
+      <BuilderNumberInput
+        width={56}
+        value={builderAdversary.spiritual?.awa}
+        onChange={(v) => setSpiritual("awa", v)}
+      />
+    </div>
+
+    <div style={{ textAlign: "center" }}>
+      <div style={{ fontSize: 12, color: "var(--theme-text-primary)" }}>
+        DEF
+      </div>
+      <div
+        style={{
+          width: 56,
+          padding: "4px 6px",
+          fontSize: 14,
+          fontWeight: "bold",
+          textAlign: "center",
+          boxSizing: "border-box",
+          color: "var(--theme-text-primary)",
+        }}
+      >
+        {(builderAdversary.spiritual?.awa ?? 0) +
+          (builderAdversary.spiritual?.pre ?? 0) +
+          10}
+      </div>
+    </div>
+
+    <div style={{ textAlign: "center" }}>
+      <div style={{ fontSize: 12, color: "var(--theme-text-primary)" }}>
+        PRE
+      </div>
+      <BuilderNumberInput
+        width={56}
+        value={builderAdversary.spiritual?.pre}
+        onChange={(v) => setSpiritual("pre", v)}
+      />
+    </div>
+  </div>
+</div>
+</div>
+
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr 1fr",
+    columnGap: 16,
+    rowGap: 4,
+    alignItems: "start",
+    marginTop: 14,
+    marginBottom: 6,
+  }}
+>
+  {/* HEADINGS */}
+  <div
+    style={{
+      textAlign: "center",
+      fontWeight: 600,
+      color: "var(--theme-text-primary)",
+    }}
+  >
+    Health
+  </div>
+
+  <div
+    style={{
+      textAlign: "center",
+      fontWeight: 600,
+      color: "var(--theme-text-primary)",
+    }}
+  >
+    Focus
+  </div>
+
+  <div
+    style={{
+      textAlign: "center",
+      fontWeight: 600,
+      color: "var(--theme-text-primary)",
+    }}
+  >
+    Investiture
+  </div>
+
+  {/* INPUTS */}
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "center",
+      gap: 8,
+    }}
+  >
+    <BuilderNumberInput
+      value={builderAdversary.minHealth}
+      onChange={(value) => {
+        setSelectedLibraryId(null);
+        setHealthRange("minHealth", value);
+      }}
+    />
+
+    <BuilderNumberInput
+      value={builderAdversary.maxHealth}
+      onChange={(value) => {
+        setSelectedLibraryId(null);
+        setHealthRange("maxHealth", value);
+      }}
+    />
+  </div>
+
+  <div style={{ textAlign: "center" }}>
     <BuilderNumberInput
       value={builderAdversary.focus}
       onChange={(value) => {
@@ -4726,17 +4908,7 @@ color: "var(--theme-text-primary)",
     />
   </div>
 
-  {/* INVESTITURE */}
   <div style={{ textAlign: "center" }}>
-    <div
-      style={{
-        fontWeight: 600,
-        marginBottom: 21,
-      }}
-    >
-      Investiture
-    </div>
-
     <BuilderNumberInput
       value={builderAdversary.investiture}
       onChange={(value) => {
@@ -4748,7 +4920,44 @@ color: "var(--theme-text-primary)",
       }}
     />
   </div>
-</div>          </details>
+
+  {/* MIN / MAX LABELS */}
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "center",
+      gap: 8,
+    }}
+  >
+    <div
+      style={{
+        width: 56,
+        textAlign: "center",
+        fontSize: 10,
+        lineHeight: 1,
+        color: "var(--theme-text-primary)",
+      }}
+    >
+      MIN
+    </div>
+
+    <div
+      style={{
+        width: 56,
+        textAlign: "center",
+        fontSize: 10,
+        lineHeight: 1,
+        color: "var(--theme-text-primary)",
+      }}
+    >
+      MAX
+    </div>
+  </div>
+
+  <div />
+  <div />
+</div>         
+        </details>
           </BuilderCard>
 
           <BuilderCard>
