@@ -1746,6 +1746,23 @@ const [activeLetter, setActiveLetter] = useState<string | null>(null);
   const importLibraryInputRef = useRef<HTMLInputElement | null>(null);
   const menuBarRef = useRef<HTMLDivElement | null>(null);
   const tabRowRef = useRef<HTMLDivElement | null>(null);
+  const libraryHeaderRef = useRef<HTMLDivElement | null>(null);
+  const [libraryHeaderHeight, setLibraryHeaderHeight] = useState(0);
+  useEffect(() => {
+  const header = libraryHeaderRef.current;
+  if (!header) return;
+
+  const updateHeight = () => {
+    setLibraryHeaderHeight(header.getBoundingClientRect().height);
+  };
+
+  updateHeight();
+
+  const observer = new ResizeObserver(updateHeight);
+  observer.observe(header);
+
+  return () => observer.disconnect();
+}, [activeTab]);
 
   // When a selected token has NO linked metadata, we try to auto-match it
   // to a library entry by name (see the selection effect below) so the GM
@@ -3663,6 +3680,7 @@ color: "var(--theme-text-primary)",
       }}
     >
           <div
+  ref={libraryHeaderRef}
   style={{
     position: "sticky",
     top: 0,
@@ -4163,7 +4181,7 @@ color: "var(--theme-text-primary)",
               <div
                 style={{
                   position: "sticky",
-                  top: 64,
+                  top: libraryHeaderHeight,
                   alignSelf: "start",
                   zIndex: 2,
                   display: "flex",
