@@ -154,7 +154,7 @@ function parseActionText(raw: string): ParsedAction {
   // Only matches a target phrase immediately after a reach/range clause,
   // e.g. "reach 5 ft., one target" — won't catch targets phrased differently.
   const targetMatch = rest.match(
-  /(?:reach\s+[0-9]+\s*ft\.?|range\s+[0-9/]+\s*ft\.?)(?:,\s*)([^.]+?target[s]?)/i
+  /(?:reach\s+[0-9]+\s*ft?|range\s+[0-9/]+\s*ft\.?)(?:,\s*)([^.]+?target[s]?)/i
 );
 const target = targetMatch?.[1]?.trim();
 
