@@ -28,6 +28,7 @@ type Adversary = {
 
   source?: "Official" | "Homebrew";
   setting?: string;
+  settings?: string[];
 
   physical?: {
     str?: number;
@@ -249,6 +250,7 @@ const EMPTY_ADVERSARY: Adversary = {
   species: "Humanoid",
   source: "Official",
   setting: "Stormlight",
+  settings: ["Stormlight"],
   physical: { str: 0, def: 10, spd: 0 },
   cognitive: { int: 0, def: 10, wil: 0 },
   spiritual: { awa: 0, def: 10, pre: 0 },
@@ -289,6 +291,24 @@ function normalizeName(value: string) {
     .replace(/\s*\([^)]*\)/g, "")
     .trim()
     .replace(/[^a-z0-9]+/g, " ");
+}
+
+function getAdversarySettings(adversary: Adversary): string[] {
+  const settings = Array.isArray(adversary.settings)
+    ? adversary.settings.filter(
+        (setting) => typeof setting === "string" && setting.trim()
+      )
+    : [];
+
+  if (settings.length > 0) {
+    return settings;
+  }
+
+  if (adversary.setting?.trim()) {
+    return [adversary.setting];
+  }
+
+  return ["Stormlight"];
 }
 
 // One-line description shown in library rows and the preview header,
@@ -1141,7 +1161,7 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
     textTransform: "uppercase",
   }}
 >
-  {adversary.source ?? "Official"} {adversary.setting ?? "Stormlight"}
+  {adversary.source ?? "Official"} {getAdversarySettings(adversary).join(" / ")}
 </p>
 
             <div
@@ -2053,7 +2073,7 @@ const selectedLibraryEntry = useMemo(
 
       const entryTier = entry.data.tier ?? "";
       const entryType = entry.data.type ?? "";
-      const entrySetting = entry.data.setting ?? "Stormlight";
+      const entrySettings = getAdversarySettings(entry.data);
       const entrySource = entry.data.source ?? "Official";
 
       const matchesTier =
@@ -2070,10 +2090,13 @@ const matchesSetting =
   librarySettingFilters.length === 0 ||
   librarySettingFilters.some((setting) =>
     setting === "Other"
-      ? !LIBRARY_SETTINGS.includes(
-          entrySetting as (typeof LIBRARY_SETTINGS)[number]
+      ? entrySettings.some(
+          (entrySetting) =>
+            !LIBRARY_SETTINGS.includes(
+              entrySetting as (typeof LIBRARY_SETTINGS)[number]
+            )
         )
-      : entrySetting === setting
+      : entrySettings.includes(setting)
   );
 
 const matchesSource =
@@ -2257,7 +2280,7 @@ const matchesSource =
           library_id: entry.id,
           name: entry.name,
           summary: entry.summary,
-          setting: entry.data.setting ?? null,
+          setting: getAdversarySettings(entry.data)[0] ?? null,
           tier: entry.data.tier ?? null,
           type: entry.data.type ?? null,
           data: entry.data,
@@ -2316,7 +2339,7 @@ const matchesSource =
         library_id: entry.id,
         name: entry.name,
         summary: entry.summary,
-        setting: entry.data.setting ?? null,
+        setting: getAdversarySettings(entry.data)[0] ?? null,
         tier: entry.data.tier ?? null,
         type: entry.data.type ?? null,
         data: entry.data,
@@ -2390,10 +2413,47 @@ const matchesSource =
 }
 
 function updateBuilderSetting(value: string) {
-  setBuilderAdversary((prev) => ({
-    ...prev,
-    setting: value,
-  }));
+  setBuilderAdversary((prev) => {
+    const current = prev.settings ?? getAdversarySettings(prev);
+    const isSelected = current.includes(value);
+
+    const next = isSelected
+      ? current.filter((setting) => setting !== value)
+      : [...current, value];
+
+    const nonBlank = next.filter((setting) => setting.trim());
+
+    if (nonBlank.length === 0) {
+      return prev;
+    }
+
+    return {
+      ...prev,
+      settings: next,
+      setting: nonBlank[0],
+    };
+  });
+}
+
+function updateBuilderCustomSetting(value: string) {
+  setBuilderAdversary((prev) => {
+    const current = prev.settings ?? getAdversarySettings(prev);
+
+    const known = current.filter((setting) =>
+      LIBRARY_SETTINGS.includes(
+        setting as (typeof LIBRARY_SETTINGS)[number]
+      )
+    );
+
+    const next = [...known, value];
+    const nonBlank = next.filter((setting) => setting.trim());
+
+    return {
+      ...prev,
+      settings: next,
+      setting: nonBlank[0] ?? "",
+    };
+  });
 }
 
   function setPhysical(
@@ -4483,14 +4543,14 @@ color: "var(--theme-text-primary)",
           onClick={() => updateBuilderSource("Homebrew")}
         />
       </BuilderChoiceRow>
-
-      <BuilderChoiceRow label="Setting">
+        
+  <BuilderChoiceRow label="Setting">
   {LIBRARY_SETTINGS.map((setting) => (
     <BuilderChoiceButton
       compact
       key={setting}
       label={setting}
-      active={(builderAdversary.setting ?? "Stormlight") === setting}
+      active={getAdversarySettings(builderAdversary).includes(setting)}
       onClick={() => updateBuilderSetting(setting)}
     />
   ))}
@@ -4498,33 +4558,62 @@ color: "var(--theme-text-primary)",
   <BuilderChoiceButton
     compact
     label="Other"
-    active={
-      Boolean(builderAdversary.setting) &&
-      !LIBRARY_SETTINGS.includes(
-        builderAdversary.setting as (typeof LIBRARY_SETTINGS)[number]
-      )
-    }
-    onClick={() => {
-      if (
-        !builderAdversary.setting ||
-        LIBRARY_SETTINGS.includes(
-          builderAdversary.setting as (typeof LIBRARY_SETTINGS)[number]
+    active={(builderAdversary.settings ?? getAdversarySettings(builderAdversary)).some(
+      (setting) =>
+        !LIBRARY_SETTINGS.includes(
+          setting as (typeof LIBRARY_SETTINGS)[number]
         )
-      ) {
-        updateBuilderSetting("");
+    )}
+    onClick={() => {
+      const current =
+        builderAdversary.settings ?? getAdversarySettings(builderAdversary);
+
+      const hasOther = current.some(
+        (setting) =>
+          !LIBRARY_SETTINGS.includes(
+            setting as (typeof LIBRARY_SETTINGS)[number]
+          )
+      );
+
+      if (hasOther) {
+        const next = current.filter((setting) =>
+          LIBRARY_SETTINGS.includes(
+            setting as (typeof LIBRARY_SETTINGS)[number]
+          )
+        );
+
+        setBuilderAdversary((prev) => ({
+          ...prev,
+          settings: next,
+          setting: next[0] ?? "",
+        }));
+      } else {
+        setBuilderAdversary((prev) => ({
+          ...prev,
+          settings: [...current, ""],
+        }));
       }
     }}
   />
 </BuilderChoiceRow>
 
-{!LIBRARY_SETTINGS.includes(
-  (builderAdversary.setting ?? "Stormlight") as
-    (typeof LIBRARY_SETTINGS)[number]
+{(builderAdversary.settings ?? getAdversarySettings(builderAdversary)).some(
+  (setting) =>
+    !LIBRARY_SETTINGS.includes(
+      setting as (typeof LIBRARY_SETTINGS)[number]
+    )
 ) && (
   <BuilderTextInput
-    value={builderAdversary.setting}
+    value={
+      (builderAdversary.settings ?? []).find(
+        (setting) =>
+          !LIBRARY_SETTINGS.includes(
+            setting as (typeof LIBRARY_SETTINGS)[number]
+          )
+      ) ?? ""
+    }
     placeholder="Custom setting"
-    onChange={(value) => updateBuilderSetting(value)}
+    onChange={(value) => updateBuilderCustomSetting(value)}
   />
 )}
 
