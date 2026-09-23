@@ -151,9 +151,20 @@ function normalizeDistance(value?: string): string {
   const trimmed = (value ?? "").trim();
   if (!trimmed) return "";
 
-  return /\bft\.?$/i.test(trimmed)
-    ? trimmed.replace(/\s*ft\.?$/i, " ft.")
-    : `${trimmed} ft.`;
+  // Already contains a distance unit, including special ranges.
+  if (/\bft\.?/i.test(trimmed)) {
+    return trimmed.replace(/\bft\.?/gi, "ft.");
+  }
+
+  // Special range: 20 per Investiture spent
+  const specialRange = trimmed.match(/^(\d+)\s+(per\s+.+)$/i);
+
+  if (specialRange) {
+    return `${specialRange[1]} ft. ${specialRange[2]}`;
+  }
+
+  // Ordinary range or reach.
+  return `${trimmed} ft.`;
 }
 
 function getAttackModifier(value?: string): string {
