@@ -12,6 +12,13 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 const METADATA_KEY = "com.eli.statblocks/adversary";
 
 type ActionCost = "free" | "reaction" | 1 | 2 | 3;
+const DAMAGE_TYPES = [
+  "Energy",
+  "Impact",
+  "Keen",
+  "Spirit",
+  "Vital",
+] as const;
 type ActiveTab = "preview" | "builder" | "library";
 type OpenMenu = "library" | "token" | null;
 
@@ -114,10 +121,87 @@ type ParsedAction = {
   range?: string;
   reach?: string;
   target?: string;
-  graze?: string;
-  hit?: string;
-  notes?: string;
+
+// New structured damage fields.
+// hit/graze remain for backward compatibility with older library entries.
+hitDie?: string;
+damageModifier?: string;
+damageType?: string;
+additionalDamage?: {
+  hitDie: string;
+  modifier: string;
+  damageType: string;
+}[];
+graze?: string;
+hit?: string;
+
+notes?: string;
 };
+
+function normalizeAttackBonus(value?: string): string {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) return "";
+
+  return trimmed.startsWith("+") || trimmed.startsWith("-")
+    ? trimmed
+    : `+${trimmed}`;
+}
+
+function normalizeDistance(value?: string): string {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) return "";
+
+  return /\bft\.?$/i.test(trimmed)
+    ? trimmed.replace(/\s*ft\.?$/i, " ft.")
+    : `${trimmed} ft.`;
+}
+
+function getAttackModifier(value?: string): string {
+  return (value ?? "").trim().replace(/^\+/, "");
+}
+
+function parseLegacyHit(
+  hit: string | undefined
+): { hitDie?: string; damageType?: string } {
+  const trimmed = (hit ?? "").trim();
+  if (!trimmed) return {};
+
+  // Remove the trailing word "damage" before parsing.
+  const withoutDamage = trimmed
+    .replace(/\s+damage\.?$/i, "")
+    .trim();
+
+  // Handles old total-damage notation such as:
+  // "9 (1d4 + 7) keen damage"
+  // "12 (2d6 + 5) impact damage"
+  const totalMatch = withoutDamage.match(
+    /^\d+\s*\((\d+d\d+)(?:\s*[+-]\s*\d+)?\)\s+(.+)$/i
+  );
+
+  if (totalMatch) {
+    return {
+      hitDie: totalMatch[1],
+      damageType: totalMatch[2].trim(),
+    };
+  }
+
+  // Handles old direct notation such as:
+  // "1d4 + 2 keen damage"
+  // "1d8+4 impact damage"
+  // "2d6 keen damage"
+  const directMatch = withoutDamage.match(
+    /^(\d+d\d+)(?:\s*[+-]\s*\d+)?\s+(.+)$/i
+  );
+
+  if (directMatch) {
+    return {
+      hitDie: directMatch[1],
+      damageType: directMatch[2].trim(),
+    };
+  }
+
+  return {};
+}
 
 // Best-effort parser for the old "one long string" action format, e.g.
 // "Sword Strike — Attack +6, reach 5 ft., one target. Hit: 2d6 damage."
@@ -162,6 +246,9 @@ const target = targetMatch?.[1]?.trim();
   const grazeMatch = rest.match(/Graze:\s*([^.;]+)/i);
   const hitMatch = rest.match(/Hit:\s*([^.;]+)/i);
 
+  const hit = hitMatch ? hitMatch[1].trim() : undefined;
+  const legacyDamage = parseLegacyHit(hit);
+
   let actionType: ParsedAction["actionType"] = "other";
   if (/attack/i.test(rest) || grazeMatch || hitMatch) actionType = "attack";
   else if (/reaction/i.test(name) || /reaction/i.test(rest)) actionType = "reaction";
@@ -176,8 +263,10 @@ const target = targetMatch?.[1]?.trim();
     range,
     reach,
     target,
+    hitDie: legacyDamage.hitDie,
+    damageType: legacyDamage.damageType,
     graze: grazeMatch ? grazeMatch[1].trim() : undefined,
-    hit: hitMatch ? hitMatch[1].trim() : undefined,
+    hit,
     notes:
       !attackBonus && !range && !reach && !grazeMatch && !hitMatch && rest
         ? rest
@@ -201,11 +290,23 @@ function normalizeActions(actions: unknown): ParsedAction[] {
       if (action && typeof action === "object") {
         const a = action as Record<string, unknown>;
 
-        const name = typeof a.name === "string" ? a.name : "";
-        const text = typeof a.text === "string" ? a.text : "";
-        const parsed = text.trim() ? parseActionText(text) : null;
+const name = typeof a.name === "string" ? a.name : "";
+const text = typeof a.text === "string" ? a.text : "";
+const parsed = text.trim() ? parseActionText(text) : null;
 
-        return {
+const attackBonus =
+  typeof a.attackBonus === "string"
+    ? a.attackBonus
+    : parsed?.attackBonus;
+
+const hit =
+  typeof a.hit === "string"
+    ? a.hit
+    : parsed?.hit;
+
+const legacyDamage = parseLegacyHit(hit);
+
+return {
   name,
   text,
   cost:
@@ -216,8 +317,12 @@ function normalizeActions(actions: unknown): ParsedAction[] {
     a.cost === 3
       ? (a.cost as ActionCost)
       : undefined,
-  focusCost: typeof a.focusCost === "string" ? a.focusCost : undefined,
-  investitureCost: typeof a.investitureCost === "string" ? a.investitureCost : undefined,
+  focusCost:
+    typeof a.focusCost === "string" ? a.focusCost : undefined,
+  investitureCost:
+    typeof a.investitureCost === "string"
+      ? a.investitureCost
+      : undefined,
   actionType:
     a.actionType === "attack" ||
     a.actionType === "ability" ||
@@ -226,15 +331,60 @@ function normalizeActions(actions: unknown): ParsedAction[] {
     a.actionType === "other"
       ? (a.actionType as ParsedAction["actionType"])
       : parsed?.actionType,
-  attackBonus: typeof a.attackBonus === "string" ? a.attackBonus : parsed?.attackBonus,
-  range: typeof a.range === "string" ? a.range : parsed?.range,
-  reach: typeof a.reach === "string" ? a.reach : parsed?.reach,
-  target: typeof a.target === "string" ? a.target : parsed?.target,
-  graze: typeof a.graze === "string" ? a.graze : parsed?.graze,
-  hit: typeof a.hit === "string" ? a.hit : parsed?.hit,
-  notes: typeof a.notes === "string" ? a.notes : "",
-};
-      }
+  attackBonus,
+  range:
+    typeof a.range === "string" ? a.range : parsed?.range,
+  reach:
+    typeof a.reach === "string" ? a.reach : parsed?.reach,
+  target:
+    typeof a.target === "string" ? a.target : parsed?.target,
+
+  hitDie:
+  typeof a.hitDie === "string"
+    ? a.hitDie
+    : legacyDamage.hitDie,
+
+damageModifier:
+  typeof a.damageModifier === "string"
+    ? a.damageModifier
+    : "",
+
+damageType:
+  typeof a.damageType === "string"
+    ? a.damageType
+    : legacyDamage.damageType,
+
+  additionalDamage:
+  Array.isArray(a.additionalDamage)
+    ? a.additionalDamage
+        .filter(
+          (damage): damage is Record<string, unknown> =>
+            Boolean(damage) && typeof damage === "object"
+        )
+        .map((damage) => ({
+        hitDie:
+          typeof damage.hitDie === "string"
+            ? damage.hitDie
+            : "",
+        modifier:
+          typeof damage.modifier === "string"
+            ? damage.modifier
+            : "",
+        damageType:
+          typeof damage.damageType === "string"
+            ? damage.damageType
+            : "",
+      }))
+    : [],
+
+  graze:
+    typeof a.graze === "string" ? a.graze : parsed?.graze,
+
+  hit,
+
+  notes:
+    typeof a.notes === "string" ? a.notes : "",
+};      }
 
       return null;
     })
@@ -1457,10 +1607,15 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
         <SectionSummary title="SKILLS" />
 
         <p style={{ margin: "4px 0" }}>
-          <strong style={{ color: "var(--theme-text-primary)" }}>Physical:</strong>{" "}
-          <InlineRulesText
-            text={(adversary.skills?.physical ?? []).join(", ") || "—"}
-          />
+         <strong style={{ color: "var(--theme-text-primary)" }}>Physical:</strong>{" "}
+        {(adversary.skills?.physical ?? []).length > 0
+          ? (adversary.skills?.physical ?? []).map((skill, index) => (
+              <React.Fragment key={index}>
+                {index > 0 && ", "}
+                <InlineRulesText text={skill} />
+              </React.Fragment>
+            ))
+          : "—"}
         </p>
 
         <p style={{ margin: "4px 0" }}>
@@ -1550,32 +1705,93 @@ function AdversaryCard({ adversary }: { adversary: Adversary }) {
   })()}
 
 </strong>{" "}
-  {(() => {
-    const headerParts = [
-      action.attackBonus ? `Attack ${action.attackBonus}` : null,
-      action.reach ? `reach ${action.reach}` : null,
-      action.range ? `range ${action.range}` : null,
-      action.target ? action.target : null,
-    ].filter(Boolean);
+{(() => {
+  const headerParts = [
+    action.attackBonus
+      ? `Attack ${normalizeAttackBonus(action.attackBonus)}`
+      : null,
+    action.reach
+      ? `reach ${normalizeDistance(action.reach)}`
+      : null,
+    action.range
+      ? `range ${normalizeDistance(action.range)}`
+      : null,
+    action.target ? action.target : null,
+  ].filter(Boolean);
 
-    return headerParts.length > 0
-  ? <InlineRulesText text={`${headerParts.join(", ")}. `} />
-  : null;
-  })()}
+  return headerParts.length > 0
+    ? <InlineRulesText text={`${headerParts.join(", ")}. `} />
+    : null;
+})()}
 
-  {action.graze && (
-    <>
-      <em>Graze:</em>{" "}
-      <InlineRulesText text={action.graze} />.{" "}
-    </>
-  )}
+{(() => {
+  const hitDie = action.hitDie?.trim();
+  const damageType = action.damageType?.trim();
 
-  {action.hit && (
-    <>
-      <em>Hit:</em>{" "}
-      <InlineRulesText text={action.hit} />.{" "}
-    </>
-  )}
+  if (hitDie) {
+    const modifier = getAttackModifier(action.damageModifier);
+
+    let damage = hitDie;
+
+    if (modifier) {
+      damage += modifier.startsWith("-")
+        ? ` - ${modifier.slice(1)}`
+        : ` + ${modifier}`;
+    }
+
+    if (damageType) {
+      damage += ` ${damageType}`;
+    }
+
+    damage += " damage";
+
+    const additionalDamage = (action.additionalDamage ?? [])
+  .filter(
+    (additional) =>
+      additional.hitDie.trim() ||
+      additional.modifier.trim() ||
+      additional.damageType.trim()
+  )
+  .map((additional) => {
+    let additionalText = additional.hitDie.trim();
+    const modifier = getAttackModifier(additional.modifier);
+
+    if (modifier) {
+      additionalText += modifier.startsWith("-")
+        ? ` - ${modifier.slice(1)}`
+        : ` + ${modifier}`;
+    }
+
+    if (additional.damageType.trim()) {
+      additionalText += ` ${additional.damageType.trim()}`;
+    }
+
+    return `${additionalText} damage`;
+  });
+
+    if (additionalDamage.length > 0) {
+      damage += ` and ${additionalDamage.join(" and ")}`;
+    }
+
+    return (
+      <>
+        <em>Hit:</em>{" "}
+        <InlineRulesText text={damage} />.{" "}
+      </>
+    );
+  }
+
+  if (action.hit) {
+    return (
+      <>
+        <em>Hit:</em>{" "}
+        <InlineRulesText text={action.hit} />.{" "}
+      </>
+    );
+  }
+
+  return null;
+})()}
 
   {action.text &&
  action.text.trim() &&
@@ -2391,10 +2607,16 @@ const matchesSource =
   return adversary;
 }
 
-  function loadLibraryEntry(entry: LibraryEntry) {
+function loadLibraryEntry(entry: LibraryEntry) {
   setSelectedLibraryId(entry.id);
   setEditingLibraryId(entry.id);
-  setBuilderAdversary(normalizeHealth(entry.data));
+
+  setBuilderAdversary(
+    normalizeHealth({
+      ...entry.data,
+      actions: normalizeActions(entry.data.actions),
+    })
+  );
 }
 
   function startNewBuilderAdversary() {
@@ -2805,10 +3027,13 @@ function addSelectedCommonFeatures() {
     | "reach"
     | "range"
     | "target"
+    | "hitDie"
+    | "damageModifier"
+    | "damageType"
     | "graze"
     | "hit"
     | "notes",
-  value: string
+      value: string
 ) {
   setBuilderAdversary((prev) => {
     const actions = [...(prev.actions ?? [])];
@@ -2822,6 +3047,10 @@ function addSelectedCommonFeatures() {
       reach: "",
       range: "",
       target: "",
+      hitDie: "",
+      damageModifier: "",
+      damageType: "",
+      additionalDamage: [],
       graze: "",
       hit: "",
       notes: "",
@@ -2848,9 +3077,87 @@ function addSelectedCommonFeatures() {
       ...(field === "reach" ? { reach: value } : {}),
       ...(field === "range" ? { range: value } : {}),
       ...(field === "target" ? { target: value } : {}),
+      ...(field === "hitDie" ? { hitDie: value } : {}),
+      ...(field === "damageModifier" ? { damageModifier: value } : {}),
+      ...(field === "damageType" ? { damageType: value } : {}),
       ...(field === "graze" ? { graze: value } : {}),
       ...(field === "hit" ? { hit: value } : {}),
-      ...(field === "notes" ? { notes: value } : {}),
+      ...(field === "notes" ? { notes: value } : {}),    };
+
+    return { ...prev, actions };
+  });
+}
+
+function addAdditionalDamage(actionIndex: number) {
+  setBuilderAdversary((prev) => {
+    const actions = [...(prev.actions ?? [])];
+    const current = actions[actionIndex];
+
+    if (!current) return prev;
+
+    actions[actionIndex] = {
+      ...current,
+      additionalDamage: [
+        ...(current.additionalDamage ?? []),
+        {
+          hitDie: "",
+          modifier: "",
+          damageType: "",
+        },
+      ],
+    };
+
+    return { ...prev, actions };
+  });
+}
+
+function updateAdditionalDamage(
+  actionIndex: number,
+  damageIndex: number,
+  field: "hitDie" | "modifier" | "damageType",
+  value: string
+) {
+  setBuilderAdversary((prev) => {
+    const actions = [...(prev.actions ?? [])];
+    const current = actions[actionIndex];
+
+    if (!current) return prev;
+
+    const additionalDamage = [...(current.additionalDamage ?? [])];
+
+    additionalDamage[damageIndex] = {
+      ...(additionalDamage[damageIndex] ?? {
+        hitDie: "",
+        modifier: "",
+        damageType: "",
+      }),
+      [field]: value,
+    };
+
+    actions[actionIndex] = {
+      ...current,
+      additionalDamage,
+    };
+
+    return { ...prev, actions };
+  });
+}
+
+function removeAdditionalDamage(
+  actionIndex: number,
+  damageIndex: number
+) {
+  setBuilderAdversary((prev) => {
+    const actions = [...(prev.actions ?? [])];
+    const current = actions[actionIndex];
+
+    if (!current) return prev;
+
+    actions[actionIndex] = {
+      ...current,
+      additionalDamage: (current.additionalDamage ?? []).filter(
+        (_, index) => index !== damageIndex
+      ),
     };
 
     return { ...prev, actions };
@@ -2870,6 +3177,15 @@ function addSelectedCommonFeatures() {
       !action.reach?.trim() &&
       !action.range?.trim() &&
       !action.target?.trim() &&
+      !action.hitDie?.trim() &&
+      !action.damageModifier?.trim() &&
+      !action.damageType?.trim() &&
+      !(action.additionalDamage ?? []).some(
+        (damage) =>
+          damage.hitDie.trim() ||
+          damage.modifier.trim() ||
+          damage.damageType.trim()
+      ) &&
       !action.graze?.trim() &&
       !action.hit?.trim() &&
       !action.notes?.trim()
@@ -2904,6 +3220,10 @@ function addSelectedCommonFeatures() {
         reach: "",
         range: "",
         target: "",
+        hitDie: "",
+        damageModifier: "",
+        damageType: "",
+        additionalDamage: [],
         graze: "",
         hit: "",
         notes: "",
@@ -5800,25 +6120,25 @@ color: "var(--theme-text-primary)",
           <BuilderLabeledInput
             label="Attack Bonus"
             value={action.attackBonus ?? ""}
-            placeholder="e.g. +6"
+            placeholder="e.g. 6"
             onChange={(value) =>
               updateAction(index, "attackBonus", value)
             }
           />
 
           <BuilderLabeledInput
-            label="Reach"
+            label="Reach (ft.)"
             value={action.reach ?? ""}
-            placeholder="e.g. 5 ft."
+            placeholder="e.g. 5"
             onChange={(value) =>
               updateAction(index, "reach", value)
             }
           />
 
           <BuilderLabeledInput
-            label="Range"
+            label="Range (ft.)"
             value={action.range ?? ""}
-            placeholder="e.g. 150/600 ft."
+            placeholder="e.g. 150/600"
             onChange={(value) =>
               updateAction(index, "range", value)
             }
@@ -5834,54 +6154,191 @@ color: "var(--theme-text-primary)",
           />
 
           <BuilderLabeledInput
-            label="Graze"
-            value={action.graze ?? ""}
-            placeholder="e.g. 2 (1d4) keen damage"
+            label="Hit Die"
+            value={action.hitDie ?? ""}
+            placeholder="e.g. 1d4"
             onChange={(value) =>
-              updateAction(index, "graze", value)
+              updateAction(index, "hitDie", value)
             }
           />
-        </div>
+
+          <BuilderLabeledInput
+            label="Damage Modifier"
+            value={action.damageModifier ?? ""}
+            placeholder="e.g. 7"
+            onChange={(value) =>
+              updateAction(index, "damageModifier", value)
+            }
+          />
+
+<BuilderChoiceRow label="Damage Type">
+  {DAMAGE_TYPES.map((damageType) => {
+    const type = damageType.toLowerCase();
+
+    const selectedTypes = (action.damageType ?? "")
+      .split(/\s+or\s+/i)
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean);
+
+    const active = selectedTypes.includes(type);
+
+    return (
+      <BuilderChoiceButton
+        key={damageType}
+        active={active}
+        label={damageType}
+        compact
+        onClick={() => {
+          const nextTypes = active
+            ? selectedTypes.filter((value) => value !== type)
+            : [...selectedTypes, type];
+
+          updateAction(
+            index,
+            "damageType",
+            nextTypes.join(" or ")
+          );
+        }}
+      />
+    );
+  })}
+</BuilderChoiceRow>
+
+          {(action.additionalDamage ?? []).map(
+  (additional, damageIndex) => (
+    <div
+      key={damageIndex}
+      style={{
+        display: "grid",
+        gap: 6,
+        marginTop: 6,
+        paddingLeft: 12,
+        borderLeft: "2px solid var(--theme-border)",
+      }}
+    >
+      <BuilderLabeledInput
+        label="Hit Die"
+        value={additional.hitDie}
+        placeholder="e.g. 1d6"
+        onChange={(value) =>
+          updateAdditionalDamage(
+            index,
+            damageIndex,
+            "hitDie",
+            value
+          )
+        }
+      />
+
+      <BuilderLabeledInput
+        label="Modifier"
+        value={additional.modifier}
+        placeholder="e.g. 3"
+        onChange={(value) =>
+          updateAdditionalDamage(
+            index,
+            damageIndex,
+            "modifier",
+            value
+          )
+        }
+      />
+
+<BuilderChoiceRow label="Damage Type">
+  {DAMAGE_TYPES.map((damageType) => {
+    const type = damageType.toLowerCase();
+
+    const selectedTypes = additional.damageType
+      .split(/\s+or\s+/i)
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean);
+
+    const active = selectedTypes.includes(type);
+
+    return (
+      <BuilderChoiceButton
+        key={damageType}
+        active={active}
+        label={damageType}
+        compact
+        onClick={() => {
+          const nextTypes = active
+            ? selectedTypes.filter((value) => value !== type)
+            : [...selectedTypes, type];
+
+          updateAdditionalDamage(
+            index,
+            damageIndex,
+            "damageType",
+            nextTypes.join(" or ")
+          );
+        }}
+      />
+    );
+  })}
+</BuilderChoiceRow>
+
+      <button
+        type="button"
+        onClick={() =>
+          removeAdditionalDamage(index, damageIndex)
+        }
+        style={{
+          justifySelf: "start",
+          padding: "2px 7px",
+          border: "1px solid var(--theme-border)",
+          borderRadius: 5,
+          background: "var(--theme-panel)",
+          color: "var(--theme-text-muted)",
+          cursor: "pointer",
+          fontSize: 10,
+        }}
+      >
+        Remove additional damage
+      </button>
+    </div>
+  )
+)}
+
+<button
+  type="button"
+  onClick={() => addAdditionalDamage(index)}
+  style={{
+    justifySelf: "start",
+    padding: "2px 7px",
+    border: "1px solid var(--theme-border)",
+    borderRadius: 5,
+    background: "var(--theme-panel)",
+    color: "var(--theme-text-primary)",
+    cursor: "pointer",
+    fontSize: 10,
+    fontWeight: 600,
+  }}
+>
+  + Add additional damage
+</button>
+          </div>
 
         <div style={{ display: "grid", gap: 6, marginBottom: 6 }}>
-  <BuilderLabeledTextArea
-    label="Hit"
-    value={action.hit ?? ""}
-    placeholder="e.g. 9 (1d4 + 7) keen damage"
-    onChange={(value) =>
-      updateAction(index, "hit", value)
-    }
-    rows={1}
-  />
 
   <BuilderLabeledTextArea
     label="Effect"
     value={action.text ?? ""}
-    placeholder="e.g. Kaiana makes a Knife attack (no action required). On a hit, the target also loses 1 Investiture"
+    placeholder=""
     onChange={(value) =>
       updateAction(index, "text", value)
     }
     rows={4}
   />
-
-  <BuilderLabeledTextArea
-    label="Notes"
-    value={action.notes ?? ""}
-    placeholder="e.g. Kaiana only gains this action if she is wielding a raysium knife."
-    onChange={(value) =>
-      updateAction(index, "notes", value)
-    }
-    rows={3}
-  />
 </div>
 
         <div
-  style={{
-    display: "flex",
-    justifyContent: "flex-end",
-    marginTop: 6,
-  }}
->
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            marginTop: 6,
+          }}
+        >
           <button
             type="button"
             onClick={() => removeAction(index)}
